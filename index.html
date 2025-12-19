@@ -22,8 +22,8 @@
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
         
-        /* 視覺統一：取消斜體 */
-        .content-text { font-size: 0.875rem; color: #445164; line-height: 1.5; font-style: normal !important; font-weight: 500; }
+        /* 統一字體：不使用斜體，顏色深灰好讀 */
+        .content-text { font-size: 0.875rem; color: #475569; line-height: 1.5; font-style: normal !important; font-weight: 500; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -35,7 +35,7 @@
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">日期載入中...</div>
+                <div id="week-label" class="text-blue-900 font-black text-base text-center">載入中...</div>
                 <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
@@ -43,7 +43,7 @@
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
             <div class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p class="text-slate-400 font-bold">資料校準中，請稍候...</p>
+                <p class="text-slate-400 font-bold">夫子正在校準資料...</p>
             </div>
         </div>
     </div>
@@ -51,19 +51,14 @@
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        
         const EXAM_DATE = "2026-01-15"; 
         const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
 
         const events = {
             "2025-12-19": "客語演說/朗讀比賽", 
-            "2025-12-22": "服裝儀容檢查", 
-            "2025-12-23": "三複習考 Day1", 
-            "2025-12-24": "三複習考/國文作業抽查", 
-            "2025-12-25": "行憲紀念日放假", 
-            "2026-01-01": "開國紀念日放假",
-            "2026-01-15": "第三次段考 Day1",
-            "2026-01-16": "第三次段考 Day2"
+            "2025-12-22": "服裝儀容檢查", "2025-12-23": "三複習考 Day1", "2025-12-24": "三複習考/國文作業抽查", 
+            "2025-12-25": "行憲紀念日放假", "2026-01-01": "開國紀念日放假",
+            "2026-01-15": "第三次段考 Day1", "2026-01-16": "第三次段考 Day2"
         };
 
         const schedule = {
@@ -93,4 +88,62 @@
             return `<span class="text-xs text-slate-400 font-normal ml-1">(段三倒數 ${count} 節)</span>`;
         }
 
-        //
+        // 優化解析：確保空白欄位也會被數進去，不發生位移
+        function parseCSV(text) {
+            const rows = [];
+            const lines = text.split(/\r?\n/);
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                // 強大 CSV 解析邏輯：保留所有空白格子
+                const cells = line.match(/(".*?"|[^",]*)(?=,|$)/g);
+                if (cells) {
+                    rows.push(cells.map(c => c.replace(/^"|"$/g, '').trim()));
+                }
+            }
+            // 索引修正：[1]日期, [2]節次, [3]進度, [4]提醒, [5]作業, [6]測驗
+            return rows.slice(1).map(r => ({
+                d: (r[1]||"").replace(/\//g, '-'),
+                p: String(r[2]||""),
+                g: r[3]||"", 
+                r: r[4]||"", 
+                h: r[5]||"", 
+                e: r[6]||""
+            }));
+        }
+
+        async function load() {
+            try {
+                const res = await fetch(`${csvUrl}&cb=${Date.now()}`);
+                const text = await res.text();
+                notesData = parseCSV(text);
+                render();
+            } catch (err) {
+                setTimeout(load, 2000); 
+            }
+        }
+
+        function render() {
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            let d = new Date(anchor);
+            let day = d.getDay();
+            let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
+
+            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                let cur = new Date(mon);
+                cur.setDate(mon.getDate() + i);
+                let dStr = cur.getFullYear() + "-" + String(cur.getMonth() + 1).padStart(2, '0') + "-" + String(cur.getDate()).padStart(2, '0');
+                let isToday = new Date().toDateString() === cur.toDateString();
+                let wd = cur.getDay();
+                let todayClasses = schedule[wd] || {};
+                let ev = events[dStr];
+
+                let cHtml = Object.entries(todayClasses).map(([p, n]) => {
+                    const nt = notesData.find(x => x.d === dStr && x.p === p);
+                    const countdown = countRemainingClasses(dStr, n);
+                    const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
+                    return `
+                    <div class="py-5 border-b border-slate-100 last:border-0 text-left">
