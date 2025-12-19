@@ -9,21 +9,114 @@
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; }
         .serif { font-family: 'Noto Serif TC', serif; }
-        
-        /* 固定頂部標題列 */
-        .main-header { 
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-            position: sticky; top: 0; z-index: 50;
-        }
-        
-        .badge { 
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px;
-            margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px; vertical-align: middle;
-        }
+        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); position: sticky; top: 0; z-index: 50; }
+        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px; margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px; }
         .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
+        .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 10px; border-radius: 8px; margin-top: 8px; }
+    </style>
+</head>
+<body class="pb-12 text-left">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">讀取中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">»</button>
+            </div>
+        </div>
+
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
+            <p class="text-center text-slate-300 py-20 animate-pulse">正在同步雲端資料...</p>
+        </div>
+    </div>
+
+    <script>
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
         
-        .content-text { font-size: 15px; line-height: 1.6; color: #334155; display: flex; align-items: center; margin-bottom: 8px; }
-        .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top:
+        const baseSchedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
+            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
+            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
+        };
+
+        let notesData = [];
+        let anchor = new Date();
+
+        // 💡 強化版 CSV 解析：支援逗號與引號
+        function parseCSV(str) {
+            const arr = [];
+            let quote = false;
+            let col = "", row = [];
+            for (let c = 0; c < str.length; c++) {
+                let char = str[c], next = str[c+1];
+                if (char === '"' && quote && next === '"') { col += char; c++; }
+                else if (char === '"') { quote = !quote; }
+                else if (char === ',' && !quote) { row.push(col); col = ""; }
+                else if (char === '\r' && !quote) { }
+                else if (char === '\n' && !quote) { row.push(col); arr.push(row); col = ""; row = []; }
+                else { col += char; }
+            }
+            if (row.length > 0) { row.push(col); arr.push(row); }
+            return arr.slice(1).map(r => ({
+                date: (r[1]||"").trim().replace(/\//g, '-'),
+                period: (r[2]||"").trim(),
+                progress: (r[3]||"").trim(),
+                remind: (r[4]||"").trim(),
+                homework: (r[5]||"").trim(),
+                exam: (r[6]||"").trim()
+            }));
+        }
+
+        async function fetchNotes() {
+            try {
+                const res = await fetch(`${csvUrl}&t=${Date.now()}`);
+                const text = await res.text();
+                notesData = parseCSV(text);
+            } catch (e) { console.error(e); }
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            let d = new Date(anchor);
+            let day = d.getDay();
+            let diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            let mon = new Date(d.setDate(diff));
+
+            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                let cur = new Date(mon);
+                cur.setDate(mon.getDate() + i);
+                let dStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+                let isToday = new Date().toDateString() === cur.toDateString();
+                let wd = cur.getDay();
+                let classes = baseSchedule[wd] || {};
+
+                let cHtml = Object.entries(classes).map(([p, n]) => {
+                    const nt = notesData.find(x => x.date === dStr && String(x.period) === String(p));
+                    const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
+                    return `
+                    <div class="py-6 border-b border-slate-100 last:border-0">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 uppercase block">第 ${p} 節</span>
+                                <div class="text-xl font-black text-slate-800 leading-tight">${n}</div>
+                            </div>
+                            <a href="${url}" target="_blank" class="w-11 h-11 flex items-center justify-center bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-100 transition-all">✎</a>
+                        </div>
+                        ${nt ? `
+                        <div class="space-y-3">
+                            ${nt.progress ? `<div class="flex items-start"><span class="badge tag-progress">進度</span><span class="text-sm text-slate-600 flex-1">${nt.progress}</span></div>` : ''}
+                            ${nt.homework ? `<div class="flex items-start"><span class="badge tag-homework">作業</span><span class="text-sm text-slate-600 flex-1">${nt.homework}</span></div>` : ''}
+                            ${nt.exam ? `<div class="flex items-start"><span
