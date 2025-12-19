@@ -18,14 +18,13 @@
             border: 1px solid; height: 24px; flex-shrink: 0; white-space: nowrap; 
         }
         
-        /* 標籤顏色定義 */
+        /* 標籤顏色深色化 */
         .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        /* 加深作業與測驗文字 */
-        .tag-homework { background: #fffbeb; color: #78350f; border-color: #fde68a; } /* 更深的琥珀色 */
-        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     /* 更深的深紅色 */
+        .tag-homework { background: #fffbeb; color: #78350f; border-color: #fde68a; } /* 加深作業色 */
+        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     /* 加深測驗色 */
         .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
         
-        .content-text { font-size: 0.875rem; color: #334155; line-height: 1.5; font-style: normal !important; font-weight: 500; }
+        .content-text { font-size: 0.875rem; color: #1e293b; line-height: 1.5; font-style: normal !important; font-weight: 700; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -37,7 +36,7 @@
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base text-center">日期同步中...</div>
+                <div id="week-label" class="text-blue-900 font-black text-base text-center italic">載入日期中...</div>
                 <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
@@ -45,7 +44,7 @@
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
             <div class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p class="text-slate-400 font-bold">夫子正在校準資料...</p>
+                <p class="text-slate-400 font-bold">夫子正在校閱卷宗...</p>
             </div>
         </div>
     </div>
@@ -65,4 +64,4 @@
         };
 
         const schedule = {
-            1
+            1: { 1: "109 國文", 2: "117 國文", 4: "
