@@ -23,12 +23,14 @@
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic">同步中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center px-4">載入中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">»</button>
             </div>
         </div>
+
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
+
         <div class="p-8 text-center bg-slate-50 border-t border-slate-100">
             <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1">張老師教學日誌系統</p>
             <p class="text-[9px] text-slate-300 italic">📍 楠梓土庫 ⇄ 左營重信路</p>
@@ -36,8 +38,10 @@
     </div>
 
     <script>
+        // 指向老師提供的 CSV 連結
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        
         const ID_DATE = "entry.1279670059";
         const ID_PERIOD = "entry.1620291828";
 
@@ -58,25 +62,27 @@
                 const text = await res.text();
                 const rows = text.split('\n').filter(r => r.trim()).slice(1);
                 notesData = rows.map(r => {
+                    // 根據截圖 對應欄位
                     const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    // 修正：將所有日期分隔符號統一轉換為橫線，方便比對
-                    const cleanDate = c[1]?.replace(/"/g, '').replace(/\//g, '-').trim();
                     return { 
-                        date: cleanDate,
-                        period: c[2]?.replace(/"/g, '').trim(),
-                        progress: c[3]?.replace(/"/g, '').trim(),
-                        remind: c[4]?.replace(/"/g, '').trim(),
-                        homework: c[5]?.replace(/"/g, '').trim(),
-                        exam: c[6]?.replace(/"/g, '').trim()
+                        date: c[1]?.replace(/"/g, '').replace(/\//g, '-').trim(), // B: 日期
+                        period: c[2]?.replace(/"/g, '').trim(),                   // C: 節次
+                        progress: c[3]?.replace(/"/g, '').trim(),                 // D: 教學進度
+                        remind: c[4]?.replace(/"/g, '').trim(),                   // E: 課堂提醒
+                        homework: c[5]?.replace(/"/g, '').trim(),                 // F: 作業內容
+                        exam: c[6]?.replace(/"/g, '').trim()                      // G: 考試提醒
                     };
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.error("讀取失敗", e);
+            }
             render();
         }
 
         function render() {
             const list = document.getElementById('main-list');
             const label = document.getElementById('week-label');
+            
             let d = new Date(anchor);
             let day = d.getDay();
             let diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -94,43 +100,6 @@
 
                 let classes = baseSchedule[weekday] || {};
                 let classHtml = Object.entries(classes).map(([p, n]) => {
-                    // 比對邏輯：將當前日期與資料庫日期進行匹配
+                    // 與 CSV 中的日期和節次進行比對
                     const note = notesData.find(note => note.date === dStr && String(note.period) === String(p));
-                    const smartUrl = `${formBase}?usp=pp_url&${ID_DATE}=${dStr}&${ID_PERIOD}=${p}`;
-                    
-                    return `
-                    <div class="py-5 border-b border-slate-50 last:border-0 text-left">
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="text-left">
-                                <span class="text-[9px] font-black text-blue-400 uppercase block">Period ${p}</span>
-                                <div class="text-base font-bold text-slate-800">${n}</div>
-                            </div>
-                            <a href="${smartUrl}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl shadow-sm">✎</a>
-                        </div>
-                        ${note ? `
-                        <div class="mt-2 space-y-2.5 text-left">
-                            ${note.progress ? `<div class="flex items-start text-left"><span class="badge tag-progress">進度</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.progress}</span></div>` : ''}
-                            ${note.homework ? `<div class="flex items-start text-left"><span class="badge tag-homework">作業</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.homework}</span></div>` : ''}
-                            ${note.exam ? `<div class="flex items-start text-left"><span class="badge tag-exam">考試</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.exam}</span></div>` : ''}
-                            ${note.remind ? `<div class="remind-box mt-1 text-left"><span class="text-[10px] font-black text-slate-400 block mb-1 tracking-widest uppercase">Memo:</span><span class="text-[11px] text-slate-500 italic">${note.remind}</span></div>` : ''}
-                        </div>` : ''}
-                    </div>`;
-                }).join('');
-
-                fullHtml += `
-                    <div class="bg-white rounded-[2rem] p-6 shadow-lg border border-white ${isToday ? 'ring-2 ring-blue-500 ring-offset-4' : ''}">
-                        <div class="flex items-center gap-3 mb-4 text-left">
-                            <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'} font-mono">${current.getDate()}</span>
-                            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
-                        </div>
-                        <div class="space-y-1">${classHtml || '<p class="text-center py-4 text-[10px] text-slate-200 italic font-mono uppercase">Reading Day</p>'}</div>
-                    </div>`;
-            }
-            list.innerHTML = fullHtml;
-        }
-
-        changeWeek(0);
-        setInterval(fetchNotes, 300000);
-    </script>
-</body>
-</html>
+                    const smartUrl
