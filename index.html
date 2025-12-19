@@ -6,17 +6,43 @@
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; background-color: #fdfaf5; color: #2c1e11; }
+        body { font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; background-color: #fdfaf5; color: #2c1e11; margin: 0; }
         
-        /* 🏮 頁首設定：置入師生上課圖 */
+        /* 🏮 頁首設定：使用深色漸層確保文字必見 */
         .main-header { 
-            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
-                        url('https://files.oaiusercontent.com/file-K80G1tQJtAAsG6Y6P8mX0H?se=2025-11-22T12%3A15%3A01Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D604800%2C%20immutable%2C%20private&rscd=attachment%3B%20filename%3D42d3284d-2a82-4113-9154-187515433190.webp&sig=G06XzY6X1K6A2P7Z9P8X8X7X6X5X4X3X2X1X0X/8%3D');
+            background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
             background-size: cover;
             background-position: center;
             border-bottom: 6px solid #5d2e0a; 
         }
 
-        .card-cartoon { border: 3px solid #3d2b1f; box-shadow: 6px 6px 0px rgba(0,0,0,0.15); background: white; border-radius: 2rem; margin-bottom: 2rem; padding: 2rem; }
-        .is-today { background-color: #f1f1f1 !important; border-color: #8b4513; border-width: 4px; } 
-        .badge { display: inline-flex
+        .card-cartoon { border: 3px solid #3d2b1f; box-shadow: 6px 6px 0px rgba(0,0,0,0.1); background: white; border-radius: 2rem; margin-bottom: 2rem; padding: 2rem; }
+        .is-today { border-color: #8b4513; border-width: 4px; background-color: #fffaf0 !important; } 
+        .badge { display: inline-flex; align-items: center; font-size: 14px; font-weight: 900; padding: 4px 12px; border-radius: 8px; border: 2.5px solid #3d2b1f; margin-right: 8px; box-shadow: 2px 2px 0px #3d2b1f; }
+        .tag-progress { background: #e6fffa; color: #234e52; }
+        .tag-homework { background: #fffaf0; color: #7b341e; }
+        .tag-exam { background: #fff5f5; color: #822727; }
+        .tag-remind { background: #f0f9ff; color: #075985; }
+    </style>
+</head>
+<body class="pb-12 text-left">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-[#fdfaf5]">
+        <div class="main-header pt-12 pb-28 px-8 text-white rounded-b-[3rem] shadow-lg relative text-left">
+            <h1 class="text-3xl font-black tracking-widest text-white">國文教學看板 📜</h1>
+            <p class="text-sm mt-2 font-bold text-white opacity-90">福山國中 • 張允蒼老師</p>
+            
+            <div class="absolute -bottom-8 left-6 right-6 bg-white border-3 border-[#3d2b1f] rounded-2xl p-3 flex items-center justify-between shadow-[0_6px_0_#3d2b1f] text-[#3d2b1f]">
+                <button onclick="changeWeek(-1)" class="w-10 h-10 font-black text-xl hover:bg-orange-50 rounded-xl">◀</button>
+                <div id="week-label" class="font-black text-base text-center flex-1">載入中...</div>
+                <button onclick="changeWeek(1)" class="w-10 h-10 font-black text-xl hover:bg-orange-50 rounded-xl">▶</button>
+            </div>
+        </div>
+
+        <div id="main-list" class="mt-16 px-6 flex-1 text-left">
+            <div id="loading-status" class="text-center py-24 text-stone-400 font-bold text-xl">✍️ 夫子研墨中...</div>
+        </div>
+    </div>
+
+    <script>
+        // 請確認試算表已發佈
+        const csvUrl = "
