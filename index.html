@@ -5,29 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師教學週報</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .today-card { border: 2px solid #3b82f6 !important; background-color: #eff6ff !important; }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-slate-100 min-h-screen">
     <div class="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col">
-        <div class="bg-blue-600 p-6 text-white text-center">
+        <div class="bg-blue-600 p-6 text-white text-center shadow-md">
             <h1 class="text-xl font-bold">張允蒼老師 教學看板</h1>
-            <p class="text-xs opacity-80 mt-1">福山國中 114-1 | 楠梓 ⇄ 重信路</p>
+            <p class="text-xs opacity-90 mt-1 font-medium">福山國中 114-1 | 楠梓 ⇄ 左營重信路</p>
         </div>
 
-        <div class="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-50">
-            <button onclick="changeWeek(-1)" class="px-3 py-1 bg-gray-100 rounded-lg text-sm font-bold">◀ 上週</button>
-            <div id="week-label" class="font-bold text-blue-800">載入中...</div>
-            <button onclick="changeWeek(1)" class="px-3 py-1 bg-gray-100 rounded-lg text-sm font-bold">下週 ▶</button>
+        <div class="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-50 shadow-sm">
+            <button onclick="changeWeek(-1)" class="px-4 py-2 bg-slate-100 hover:bg-blue-100 rounded-xl text-sm font-bold transition-all active:scale-95">◀ 上週</button>
+            <div id="week-label" class="font-black text-blue-800 text-lg">計算中...</div>
+            <button onclick="changeWeek(1)" class="px-4 py-2 bg-slate-100 hover:bg-blue-100 rounded-xl text-sm font-bold transition-all active:scale-95">下週 ▶</button>
         </div>
 
-        <div id="main-list" class="flex-1 p-4 space-y-4">
-            <div class="text-center py-10 text-gray-400 italic">正在嘗試讀取課表與行事曆...</div>
-        </div>
+        <div id="main-list" class="flex-1 p-4 space-y-4 bg-slate-50">
+            </div>
 
-        <div class="p-4 text-[10px] text-center text-gray-300 border-t">
-            若畫面空白，請嘗試重新整理網頁
+        <div class="p-4 text-[10px] text-center text-slate-300 border-t bg-white">
+            資料更新：114學年度第1學期行事曆 | 重信路 215 號 辦公室專用
         </div>
     </div>
 
@@ -41,7 +37,7 @@
             5: { 2: "國語 116", 5: "國語 117", 7: "國語 109" }
         };
 
-        // 2. 行事曆活動
+        // 2. 行事曆活動 [cite: 1, 3, 5, 6, 7]
         const events = [
             { d: "2025-12-12", t: "校慶運動會", c: "bg-orange-500" },
             { d: "2025-12-15", t: "校慶補假", c: "bg-green-500" },
@@ -50,8 +46,8 @@
             { d: "2025-12-24", t: "國文作業抽查(習作/作文)", c: "bg-blue-600" },
             { d: "2026-01-01", t: "元旦放假", c: "bg-green-500" },
             { d: "2026-01-05", t: "服裝儀容檢查", c: "bg-purple-500" },
-            { d: "2026-01-15", t: "第三次段考 Day1", c: "bg-red-500" },
-            { d: "2026-01-16", t: "第三次段考 Day2", c: "bg-red-500" },
+            { d: "2026-01-15", t: "第三次段考 Day 1", c: "bg-red-500" },
+            { d: "2026-01-16", t: "第三次段考 Day 2", c: "bg-red-500" },
             { d: "2026-01-23", t: "休業式 (15:30放學)", c: "bg-blue-800" }
         ];
 
@@ -60,16 +56,21 @@
         function render() {
             const list = document.getElementById('main-list');
             const label = document.getElementById('week-label');
-            list.innerHTML = '';
+            if (!list || !label) return;
 
+            list.innerHTML = '';
+            
             // 計算本週週一
             let curr = new Date(anchor);
             let day = curr.getDay();
             let diff = curr.getDate() - day + (day === 0 ? -6 : 1);
             let monday = new Date(curr.setDate(diff));
 
-            label.innerText = (monday.getMonth()+1) + "/" + monday.getDate() + " - " + 
-                              new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'});
+            let sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+
+            // 更新日期標籤
+            label.innerText = (monday.getMonth()+1) + "/" + monday.getDate() + " - " + (sunday.getMonth()+1) + "/" + sunday.getDate();
 
             for (let i = 0; i < 7; i++) {
                 let d = new Date(monday);
@@ -78,16 +79,42 @@
                 let isToday = new Date().toDateString() === d.toDateString();
                 let weekday = d.getDay();
 
-                // 找課程
-                let classes = schedule[weekday] || {};
-                let classHtml = Object.entries(classes).map(([p, n]) => 
-                    `<div class="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
-                        <span class="text-blue-500 font-bold">第 ${p} 節</span>
-                        <span class="text-gray-700">${n}</span>
+                let dayClasses = schedule[weekday] || {};
+                let classHtml = Object.entries(dayClasses).map(([p, n]) => 
+                    `<div class="flex justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
+                        <span class="text-blue-600 font-bold">第 ${p} 節</span>
+                        <span class="text-slate-700 font-medium">${n}</span>
                     </div>`
                 ).join('');
 
-                // 找活動
                 let dayEvents = events.filter(e => e.d === dStr).map(e => 
-                    `<div class="flex items-center gap-2 mb-1">
-                        <span class="w-2 h-2 rounded-full ${
+                    `<div class="flex items-center gap-2 mb-1.5 bg-white p-1.5 rounded border border-slate-100 shadow-sm">
+                        <span class="w-2 h-2 rounded-full ${e.c}"></span>
+                        <span class="text-xs font-black text-slate-800">${e.t}</span>
+                    </div>`
+                ).join('');
+
+                list.innerHTML += `
+                    <div class="p-4 bg-white rounded-2xl shadow-sm border ${isToday ? 'border-blue-400 ring-2 ring-blue-50 bg-blue-50/30' : 'border-slate-100'}">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-xl font-mono font-black ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d.getDate()}</span>
+                            <span class="text-xs text-slate-400 font-bold">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
+                            ${isToday ? '<span class="ml-auto text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">TODAY</span>' : ''}
+                        </div>
+                        <div class="space-y-1">${dayEvents}</div>
+                        <div class="mt-2 bg-slate-50/50 rounded-xl p-2 px-3">${classHtml || '<p class="text-[10px] text-slate-300 italic py-1">本日無課表排程</p>'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function changeWeek(n) {
+            anchor.setDate(anchor.getDate() + (n * 7));
+            render();
+        }
+
+        // 強制立即執行，不等待 window.onload
+        render();
+    </script>
+</body>
+</html>
