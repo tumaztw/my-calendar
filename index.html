@@ -3,118 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學週報</title>
+    <title>張老師教學日誌</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 min-h-screen">
-    <div class="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col">
-        <div class="bg-blue-600 p-6 text-white text-center shadow-md">
-            <h1 class="text-xl font-bold">張允蒼老師 教學看板</h1>
-            <p class="text-xs opacity-90 mt-1 font-medium">福山國中 114-1 | 楠梓 ⇄ 左營重信路</p>
+<body class="bg-slate-50 min-h-screen pb-12">
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl flex flex-col">
+        <div class="bg-indigo-700 p-6 text-white text-center shadow-lg">
+            <h1 class="text-xl font-bold tracking-tight">張允蒼老師 教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 uppercase">Fushan Junior High School • 114-1</p>
         </div>
 
-        <div class="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-50 shadow-sm">
-            <button onclick="changeWeek(-1)" class="px-4 py-2 bg-slate-100 hover:bg-blue-100 rounded-xl text-sm font-bold transition-all active:scale-95">◀ 上週</button>
-            <div id="week-label" class="font-black text-blue-800 text-lg">計算中...</div>
-            <button onclick="changeWeek(1)" class="px-4 py-2 bg-slate-100 hover:bg-blue-100 rounded-xl text-sm font-bold transition-all active:scale-95">下週 ▶</button>
+        <div class="flex items-center justify-between p-4 bg-white/90 backdrop-blur sticky top-0 border-b z-50 shadow-sm">
+            <button onclick="changeWeek(-1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-indigo-100 transition-all text-slate-600">◀</button>
+            <div id="week-label" class="font-black text-indigo-900 text-lg">讀取中...</div>
+            <button onclick="changeWeek(1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-indigo-100 transition-all text-slate-600">▶</button>
         </div>
 
-        <div id="main-list" class="flex-1 p-4 space-y-4 bg-slate-50">
-            </div>
+        <div id="main-list" class="flex-1 p-4 space-y-6">
+            <div class="text-center py-20 text-slate-300 italic animate-pulse">正在從試算表同步資料...</div>
+        </div>
 
-        <div class="p-4 text-[10px] text-center text-slate-300 border-t bg-white">
-            資料更新：114學年度第1學期行事曆 | 重信路 215 號 辦公室專用
+        <div class="px-6 py-4 bg-slate-50 text-[10px] text-gray-400 border-t text-center">
+            📍 楠梓土庫 ⇄ 左營重信路 • 自動同步系統已就緒
         </div>
     </div>
 
     <script>
-        // 1. 課表資料
-        const schedule = {
-            1: { 1: "國語 109", 2: "國語 117", 4: "國語 116" },
-            2: { 2: "國語 116", 3: "國語 109", 5: "國語 117", 7: "閱讀 116" },
-            3: { 2: "國語 109", 3: "國語 116", 7: "國語 117" },
-            4: { 1: "國語 109", 3: "國語 117", 4: "國語 116", 6: "閱讀 109" },
-            5: { 2: "國語 116", 5: "國語 117", 7: "國語 109" }
+        // --- 設定區 ---
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        const dateId = "entry.1279670059"; 
+        const periodId = "entry.1620291828";
+
+        const timeSlots = { 1: "08:20", 2: "09:15", 3: "10:10", 4: "11:05", 5: "13:15", 6: "14:10", 7: "15:15" };
+        const baseSchedule = {
+            1: { 1: "109 國語", 2: "117 國語", 4: "116 國語" },
+            2: { 2: "116 國語", 3: "109 國語", 5: "117 國語", 7: "116 閱讀" },
+            3: { 2: "109 國語", 3: "116 國語", 7: "117 國語" },
+            4: { 1: "109 國語", 3: "117 國語", 4: "116 國語", 6: "109 閱讀" },
+            5: { 2: "116 國語", 5: "117 國語", 7: "109 國語" }
         };
 
-        // 2. 行事曆活動 [cite: 1, 3, 5, 6, 7]
-        const events = [
-            { d: "2025-12-12", t: "校慶運動會", c: "bg-orange-500" },
-            { d: "2025-12-15", t: "校慶補假", c: "bg-green-500" },
-            { d: "2025-12-16", t: "班級開班會/畢冊截稿", c: "bg-gray-500" },
-            { d: "2025-12-19", t: "校內語文競賽", c: "bg-blue-400" },
-            { d: "2025-12-24", t: "國文作業抽查(習作/作文)", c: "bg-blue-600" },
-            { d: "2026-01-01", t: "元旦放假", c: "bg-green-500" },
-            { d: "2026-01-05", t: "服裝儀容檢查", c: "bg-purple-500" },
-            { d: "2026-01-15", t: "第三次段考 Day 1", c: "bg-red-500" },
-            { d: "2026-01-16", t: "第三次段考 Day 2", c: "bg-red-500" },
-            { d: "2026-01-23", t: "休業式 (15:30放學)", c: "bg-blue-800" }
-        ];
-
+        let notesData = []; 
         let anchor = new Date();
 
-        function render() {
-            const list = document.getElementById('main-list');
-            const label = document.getElementById('week-label');
-            if (!list || !label) return;
-
-            list.innerHTML = '';
-            
-            // 計算本週週一
-            let curr = new Date(anchor);
-            let day = curr.getDay();
-            let diff = curr.getDate() - day + (day === 0 ? -6 : 1);
-            let monday = new Date(curr.setDate(diff));
-
-            let sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-
-            // 更新日期標籤
-            label.innerText = (monday.getMonth()+1) + "/" + monday.getDate() + " - " + (sunday.getMonth()+1) + "/" + sunday.getDate();
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(monday);
-                d.setDate(monday.getDate() + i);
-                let dStr = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0') + "-" + String(d.getDate()).padStart(2,'0');
-                let isToday = new Date().toDateString() === d.toDateString();
-                let weekday = d.getDay();
-
-                let dayClasses = schedule[weekday] || {};
-                let classHtml = Object.entries(dayClasses).map(([p, n]) => 
-                    `<div class="flex justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
-                        <span class="text-blue-600 font-bold">第 ${p} 節</span>
-                        <span class="text-slate-700 font-medium">${n}</span>
-                    </div>`
-                ).join('');
-
-                let dayEvents = events.filter(e => e.d === dStr).map(e => 
-                    `<div class="flex items-center gap-2 mb-1.5 bg-white p-1.5 rounded border border-slate-100 shadow-sm">
-                        <span class="w-2 h-2 rounded-full ${e.c}"></span>
-                        <span class="text-xs font-black text-slate-800">${e.t}</span>
-                    </div>`
-                ).join('');
-
-                list.innerHTML += `
-                    <div class="p-4 bg-white rounded-2xl shadow-sm border ${isToday ? 'border-blue-400 ring-2 ring-blue-50 bg-blue-50/30' : 'border-slate-100'}">
-                        <div class="flex items-center gap-2 mb-3">
-                            <span class="text-xl font-mono font-black ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d.getDate()}</span>
-                            <span class="text-xs text-slate-400 font-bold">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
-                            ${isToday ? '<span class="ml-auto text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">TODAY</span>' : ''}
-                        </div>
-                        <div class="space-y-1">${dayEvents}</div>
-                        <div class="mt-2 bg-slate-50/50 rounded-xl p-2 px-3">${classHtml || '<p class="text-[10px] text-slate-300 italic py-1">本日無課表排程</p>'}</div>
-                    </div>
-                `;
-            }
-        }
-
-        function changeWeek(n) {
-            anchor.setDate(anchor.getDate() + (n * 7));
+        async function fetchNotes() {
+            try {
+                const res = await fetch(csvUrl);
+                const text = await res.text();
+                const rows = text.split('\n').slice(1);
+                notesData = rows.map(r => {
+                    // 處理內容中的逗號
+                    const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    return { 
+                        d: c[1]?.replace(/"/g, '').trim(), 
+                        p: c[2]?.replace(/"/g, '').trim(), 
+                        t: c[3]?.replace(/"/g, '').trim() 
+                    };
+                });
+            } catch (e) { console.error("CSV讀取失敗"); }
             render();
         }
 
-        // 強制立即執行，不等待 window.onload
-        render();
-    </script>
-</body>
-</html>
+        function render() {
+            const
