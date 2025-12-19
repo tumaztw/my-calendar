@@ -12,13 +12,10 @@
         .card { background: white; border-radius: 2rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background-color: #f8fafc; }
         .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; }
-        
-        /* 強化標籤文字對比度 */
         .tag-progress { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #713f12; border-color: #fde68a; } 
         .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     
         .tag-remind { background: #f0f9ff; color: #0c4a6e; border-color: #bae6fd; }
-        
         .content-text { font-size: 0.95rem; color: #0f172a; line-height: 1.6; font-weight: 700; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -29,21 +26,17 @@
             <h1 class="text-3xl font-black tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-sm">正在讀取卷宗...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">»</button>
+                <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-sm">正在同步資料...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl">»</button>
             </div>
         </div>
-
-        <div id="main-list" class="mt-16 px-5">
-            </div>
+        <div id="main-list" class="mt-16 px-5"></div>
     </div>
 
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        
-        // 假日設定
         const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
 
         const schedule = {
@@ -54,41 +47,28 @@
             5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
         };
 
-        const events = { 
-            "2025-12-19": "客語比賽", 
-            "2025-12-23": "三複習考 Day1", 
-            "2025-12-25": "行憲紀念日(放假)", 
-            "2026-01-01": "元旦(放假)" 
-        };
+        const events = { "2025-12-19": "客語比賽", "2025-12-23": "三複習考 Day1", "2025-12-25": "行憲紀念日(放假)", "2026-01-01": "元旦(放假)" };
 
         let notesData = [];
         let anchor = new Date();
 
-        // 日期解析器：處理 2025/12/19 或 2025-12-19
-        function parseCsvDate(rawDate) {
-            if (!rawDate) return "";
-            let clean = rawDate.split(' ')[0].replace(/\//g, '-');
-            let parts = clean.split('-');
-            if (parts.length === 3) {
-                return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
-            }
-            return clean;
+        function parseCsvDate(raw) {
+            if (!raw) return "";
+            let d = raw.split(' ')[0].replace(/\//g, '-');
+            let p = d.split('-');
+            return p.length === 3 ? `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}` : d;
         }
 
         async function load() {
             try {
-                const response = await fetch(`${csvUrl}&cb=${Date.now()}`);
-                const text = await response.text();
+                const res = await fetch(`${csvUrl}&cb=${Date.now()}`);
+                const text = await res.text();
                 const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
                 notesData = lines.map(line => {
                     const c = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-                    return { 
-                        d: parseCsvDate(c[1]), 
-                        p: String(c[2]), 
-                        g: c[3], r: c[4], h: c[5], e: c[6] 
-                    };
+                    return { d: parseCsvDate(c[1]), p: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
                 });
-            } catch (e) { console.log("資料同步中..."); }
+            } catch (e) { console.log("載入中..."); }
             render();
         }
 
@@ -98,7 +78,6 @@
             let d = new Date(anchor);
             let day = d.getDay();
             let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
-            
             label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
 
             let html = "";
@@ -123,4 +102,28 @@
                             <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="w-8 h-8 flex items-center justify-center bg-blue-50 rounded-full text-blue-500 text-lg">✎</a>
                         </div>
                         <div class="space-y-2">
-                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>
+                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
+                            ${nt?.h ? `<div class="flex gap-2"><span class="badge tag-homework">作業</span><span class="content-text">${nt.h}</span></div>` : ''}
+                            ${nt?.e ? `<div class="flex gap-2"><span class="badge tag-exam">測驗</span><span class="content-text">${nt.e}</span></div>` : ''}
+                            ${nt?.r ? `<div class="flex gap-2"><span class="badge tag-remind">提醒</span><span class="content-text">${nt.r}</span></div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="card ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
+                        <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    ${ev ? `<div class="event-bar">🚩 ${ev}</div>` : ''}
+                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">${isHoliday ? '國定假日放假' : '本日無課程'}</p>`}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); load(); }
+        window.onload = load;
+    </script>
+</body>
+</html>
