@@ -5,35 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; margin: 0; padding-bottom: 40px; }
-        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 40px 20px 60px; border-radius: 0 0 40px 40px; position: relative; }
-        .nav-bar { position: absolute; bottom: -25px; left: 20px; right: 20px; background: white; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; color: #1e3a8a; }
-        .card { background: white; margin: 45px 15px 20px; border-radius: 25px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .is-today { border: 2.5px solid #3b82f6 !important; background-color: #f0f9ff !important; }
-        .badge { display: inline-block; font-size: 11px; font-weight: 900; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px solid; vertical-align: middle; }
-        .tag-p { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        .tag-h { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
-        .tag-e { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        body { font-family: sans-serif; background-color: #f8fafc; margin: 0; }
+        .header { background: #1e3a8a; color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 30px 30px; }
+        .card { background: white; margin: 20px 15px; border-radius: 20px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .is-today { border: 2px solid #3b82f6; background-color: #f0f9ff; }
+        .badge { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 5px; color: white; font-weight: bold; }
+        .tag-p { background: #16a34a; } /* 進度-綠 */
+        .tag-h { background: #d97706; } /* 作業-橘 */
+        .tag-e { background: #dc2626; } /* 測驗-紅 */
+        .item { margin-top: 10px; font-size: 14px; line-height: 1.5; color: #334155; }
     </style>
 </head>
 <body>
-    <div class="max-w-md mx-auto min-h-screen">
-        <div class="header text-center">
-            <h1 class="text-2xl font-black italic">國文教學看板</h1>
-            <p class="text-[10px] opacity-60 tracking-widest mt-1">福山國中 • 張允蒼老師</p>
-            <div class="nav-bar">
-                <button onclick="changeWeek(-1)" class="w-10 h-10 font-black text-xl">«</button>
-                <div id="week-label" class="font-bold text-sm italic">資料載入中...</div>
-                <button onclick="changeWeek(1)" class="w-10 h-10 font-black text-xl">»</button>
+    <div class="max-w-md mx-auto">
+        <div class="header">
+            <h1 class="text-xl font-bold">國文教學看板</h1>
+            <p class="text-xs opacity-70">福山國中 • 張允蒼老師</p>
+            <div class="flex justify-between items-center mt-5 bg-white text-blue-900 p-2 rounded-xl">
+                <button onclick="changeWeek(-1)" class="px-4 font-bold">«</button>
+                <span id="week-label" class="text-sm font-bold">讀取中...</span>
+                <button onclick="changeWeek(1)" class="px-4 font-bold">»</button>
             </div>
         </div>
 
         <div id="main-list">
-            <div class="py-20 text-center text-slate-400 animate-pulse">夫子正在閱卷中...</div>
-        </div>
+            </div>
     </div>
 
     <script>
-        const csvUrl = "
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        
+        const schedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
+            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
+            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
+        };
+
+        let notes = [];
+        let anchor = new Date();
+
+        // 🚀 最原始的解析：不管有沒有引號，直接一行一行拆
+        function parse(text) {
+            const rows = text.split("\n");
+            return rows.slice(1).map(row => {
+                const c = row.split(",");
+                return {
+                    d: (c[1] || "").trim().replace(/\//g, '-'),
+                    p: (c[2] || "").trim(),
+                    g: (c[3] || "").trim(), // 進度
+                    r: (c[4] || "").trim(), // 提醒
+                    h: (c[5] || "").trim(), // 作業
+                    e: (c[6] || "").trim()  // 測驗
+                };
+            });
+        }
+
+        async function load() {
+            try {
+                const res = await fetch(csvUrl + "&t=" + Date.now());
+                const text = await res.text();
+                notes = parse(text);
+            } catch (err) {}
+            draw();
+        }
+
+        function draw() {
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            let d = new Date(anchor);
+            let day = d.getDay();
+            let diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            let mon = new Date(d.setDate(diff));
+
+            label.innerText = (mon.getMonth()+1) + "/" + mon.getDate() + " — " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString();
+
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                let cur = new Date(mon);
+                cur.setDate(mon.getDate() + i);
+                let dStr = cur.getFullYear() + "-" + String(cur.getMonth()+1).padStart(2,'0') + "-" + String(cur.getDate()).padStart(2,'0');
+                let isToday = new Date().toDateString() === cur.toDateString();
+                let wd = cur.getDay();
+                let classes = schedule[wd] || {};
+
+                let cHtml = "";
+                for (let p in classes) {
+                    const nt = notes.find(x => x.d === dStr && x.p === p);
+                    cHtml += `
+                    <div style="padding:15px 0; border-bottom:1px solid #eee;">
+                        <div style="font-weight:bold; color:#1e3a8a;">第 ${p} 節 ${classes[p]}</div>
+                        ${nt ? `
+                            <div class="item">${nt.g ? `<span class="badge tag-p">進度</span>${nt.g}` : ''}</div>
+                            <div class="item">${nt.h ? `<span class="badge tag-h">作業</span>${nt.h}` : ''}</div>
+                            <div class="item">${nt.e ? `<span class="badge tag-e">測驗</span>${nt.e}` : ''}</div>
+                            ${nt.r ? `<div style="margin-top:5px; color:#64748b; font-size:12px;">註：${nt.r}</div>` : ''}
+                        ` : ''}
+                    </div>`;
+                }
+
+                html += `
+                <div class="card ${isToday ? 'is-today' : ''}">
+                    <div style="font-weight:bold; margin-bottom:10px;">
+                        <span style="font-size:24px;">${cur.getDate()}</span> 
+                        <span style="font-size:14px; color:#64748b;">${["週日","週一","週二","週三","週四","週五","週
