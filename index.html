@@ -10,44 +10,38 @@
         html { scroll-behavior: smooth; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; }
         .serif { font-family: 'Noto Serif TC', serif; }
-        
-        /* 固定頂部導航 */
-        .sticky-header { 
-            position: sticky; top: 0; z-index: 50; 
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-        }
-        
-        .badge { 
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px;
-            margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px;
-        }
+        .sticky-header { position: sticky; top: 0; z-index: 50; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; padding: 2px 8px; border-radius: 6px; margin-right: 8px; border: 1px solid; min-width: 45px; }
         .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-        
-        /* 今日方框樣式 */
-        .is-today { 
-            background-color: #f1f5f9 !important; 
-            border: 2.5px solid #3b82f6 !important; 
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
-            scroll-margin-top: 150px; 
-        }
-
-        .btn-today {
-            position: fixed; bottom: 20px; right: 20px; z-index: 100;
-            background: #1e3a8a; color: white; width: 50px; height: 50px;
-            border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center; font-weight: 900;
-        }
+        .is-today { background-color: #f8fafc !important; border: 2px solid #3b82f6 !important; scroll-margin-top: 160px; }
+        .btn-today { position: fixed; bottom: 20px; right: 20px; z-index: 100; background: #1e3a8a; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body class="pb-12 text-left">
     <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white relative">
-        
         <div class="sticky-header pt-10 pb-16 px-8 text-white rounded-b-[3rem] shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
-            
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">載入中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">»</button>
+            </div>
+        </div>
+
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
+            <div class="text-center py-20 text-slate-300 font-bold animate-pulse">正在讀取雲端資料...</div>
+        </div>
+
+        <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1">教學紀錄系統</p>
+            <p class="text-[9px] text-slate-300 italic">2025 Optimized Version</p>
+        </div>
+        <button onclick="scrollToToday()" class="btn-today">今</button>
+    </div>
+
+    <script>
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "
