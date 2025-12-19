@@ -17,7 +17,7 @@
         .content-text { font-size: 16px; line-height: 28px; color: #1e293b; display: flex; align-items: center; margin-bottom: 10px; }
         .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
         
-        /* ✅ 您要求的：今日區塊顯示淺灰色背景 */
+        /* ✅ 今日區塊：淺灰色背景與細邊框 */
         .is-today { 
             background-color: #f1f5f9 !important; 
             border: 1.5px solid #cbd5e1 !important;
@@ -32,13 +32,13 @@
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">載入中...</div>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center text-sm">載入中...</div>
                 <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
 
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
-            <p class="text-center text-slate-400 py-20 animate-pulse">正在整理教案...</p>
+            <p class="text-center text-slate-400 py-20">正在準備課堂資訊...</p>
         </div>
 
         <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
@@ -51,9 +51,9 @@
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
         
+        // 基礎課表設定
         const baseSchedule = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
             3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
-            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
-            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109
