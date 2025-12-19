@@ -20,26 +20,22 @@
     </style>
 </head>
 <body>
-
     <div class="max-w-md mx-auto min-h-screen">
         <div class="main-header">
             <h1 class="text-2xl font-black">國文教學看板</h1>
             <p class="text-xs opacity-70 mt-1">福山國中 • 張允蒼老師</p>
         </div>
-
         <div class="week-nav">
             <button onclick="changeWeek(-1)" class="w-10 h-10 font-bold text-blue-800 text-xl">«</button>
-            <div id="week-label" class="font-black text-blue-900">同步資料中...</div>
+            <div id="week-label" class="font-black text-blue-900">載入中</div>
             <button onclick="changeWeek(1)" class="w-10 h-10 font-bold text-blue-800 text-xl">»</button>
         </div>
-
         <div id="main-list"></div>
     </div>
 
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-
         const schedule = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
@@ -47,7 +43,6 @@
             4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
             5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
         };
-
         let notesData = [];
         let anchor = new Date();
 
@@ -55,61 +50,30 @@
             return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
         }
 
-        async function loadData() {
-            try {
-                // 加入亂數參數確保抓到最新資料
-                const res = await fetch(`${csvUrl}&cachebust=${Date.now()}`);
-                const text = await res.text();
-                const rows = text.split(/\r?\n/).slice(1);
-                
-                notesData = rows.map(r => {
-                    const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-                    // 強化日期格式相容性
-                    let rawDate = c[1] ? c[1].split(' ')[0] : "";
-                    let dParts = rawDate.split(/[\/\-]/);
-                    let dStr = "";
-                    if (dParts.length === 3) {
-                        dStr = `${dParts[0]}-${dParts[1].padStart(2,'0')}-${dParts[2].padStart(2,'0')}`;
-                    }
-                    return { date: dStr, period: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
-                });
-            } catch (e) { }
-            render();
-        }
-
         function render() {
             const list = document.getElementById('main-list');
             const label = document.getElementById('week-label');
-            
             let d = new Date(anchor);
             let day = d.getDay();
             let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
             let sun = new Date(new Date(mon).setDate(mon.getDate() + 6));
-            
             label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${sun.getMonth()+1}/${sun.getDate()}`;
 
             let html = "";
             for (let i = 0; i < 7; i++) {
-                let cur = new Date(mon);
-                cur.setDate(mon.getDate() + i);
+                let cur = new Date(mon); cur.setDate(mon.getDate() + i);
                 let dStr = fmtDate(cur);
-                let isToday = new Date().toDateString() === cur.toDateString();
                 let wd = cur.getDay();
+                let isToday = new Date().toDateString() === cur.toDateString();
                 let dayClasses = schedule[wd] || {};
 
                 let cHtml = Object.entries(dayClasses).map(([p, name]) => {
-                    // 比對日期與節次
                     const nt = notesData.find(x => x.date === dStr && x.period === p);
                     return `
                     <div class="py-3 border-b border-slate-100 last:border-0">
                         <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-[10px] text-blue-500 font-bold">第 ${p} 節</span>
-                                <div class="font-bold text-slate-800 text-lg">${name}</div>
-                            </div>
+                            <div><span class="text-[10px] text-blue-500 font-bold">第 ${p} 節</span><div class="font-bold text-slate-800 text-lg">${name}</div></div>
                             <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="text-blue-300 text-xl">✎</a>
                         </div>
                         <div class="mt-2 space-y-1">
-                            ${nt?.g ? `<div><span class="badge tag-p">進度</span><span class="text-sm font-bold">${nt.g}</span></div>` : ''}
-                            ${nt?.h ? `<div><span class="badge tag-h">作業</span><span class="text-sm font-bold">${nt.h}</span></div>` : ''}
-                            ${nt?.e ? `<div><span class="badge tag-e
+                            ${nt?.g ? `<div><span class
