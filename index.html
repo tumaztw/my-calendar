@@ -9,13 +9,19 @@
         body { background: #f1f5f9; margin: 0; font-family: sans-serif; }
         .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 20px 55px; text-align: center; color: white; border-radius: 0 0 2.5rem 2.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .nav-container { background: white; margin: -35px 15px 15px; padding: 12px; border-radius: 1.2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.8); }
-        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; transition: transform 0.2s; }
+        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background: #f0f7ff; }
-        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; margin-right: 6px; color: white; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* ✅ 懸掛縮進核心排版：確保文字不超過標籤 */
+        .info-table { display: table; width: 100%; border-spacing: 0 8px; }
+        .info-row { display: table-row; }
+        .badge-cell { display: table-cell; width: 50px; vertical-align: top; padding-top: 2px; }
+        .text-cell { display: table-cell; vertical-align: top; font-size: 15px; font-weight: 700; color: #334155; line-height: 1.6; padding-left: 4px; }
+        .badge { font-size: 11px; padding: 3px 0; border-radius: 6px; color: white; font-weight: bold; width: 42px; display: block; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
-    <div class="max-w-md mx-auto min-h-screen">
+    <div class="max-w-md mx-auto min-h-screen pb-10">
         <div class="header">
             <h1 class="text-2xl font-black tracking-wider">國文教學看板</h1>
             <p class="text-[11px] opacity-80 mt-1">福山國中 • 張允蒼老師</p>
@@ -45,12 +51,8 @@
         let db = [];
         let anchorDate = new Date();
 
-        // 核心解析器：處理 CSV 內部的雙引號與逗號問題
         function parseCSV(text) {
-            const rows = [];
-            let row = [];
-            let col = "";
-            let inQuotes = false;
+            const rows = []; let row = []; let col = ""; let inQuotes = false;
             for (let i = 0; i < text.length; i++) {
                 let char = text[i];
                 if (char === '"' && text[i+1] === '"') { col += '"'; i++; }
@@ -75,35 +77,31 @@
             let html = "";
             for (let i = 0; i < 7; i++) {
                 let curr = new Date(mon); curr.setDate(mon.getDate() + i);
-                let ds = curr.getFullYear()+"-"+String(curr.getMonth()+ mon.getMonth() === curr.getMonth() ? curr.getMonth()+1 : curr.getMonth()+1).padStart(2,'0')+"-"+String(curr.getDate()).padStart(2,'0');
-                // 為了日期比對正確，重寫 ds 生成
                 let ds_match = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
+                let isToday = new Date().toDateString() === curr.toDateString();
                 
-                let wd = curr.getDay();
-                let classes = TIMETABLE[wd] || {};
-
-                let classRows = Object.entries(classes).map(([p, name]) => {
+                let classRows = Object.entries(TIMETABLE[curr.getDay()] || {}).map(([p, name]) => {
                     const rowData = db.find(x => x.date === ds_match && x.p === String(p));
                     return `
                     <div class="py-4 border-b border-slate-50 last:border-0">
-                        <div class="flex justify-between items-center mb-1">
+                        <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span>
                             <a href="${FORM_BASE}?usp=pp_url&entry.1279670059=${ds_match}&entry.1620291828=${p}" target="_blank" class="text-slate-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
                             </a>
                         </div>
-                        <div class="mt-2 space-y-2">
-                            ${rowData?.g ? `<div><span class="badge bg-emerald-500">進度</span><span class="text-sm font-bold text-slate-700">${rowData.g}</span></div>` : ''}
-                            ${rowData?.h ? `<div><span class="badge bg-orange-400">作業</span><span class="text-sm font-bold text-slate-700">${rowData.h}</span></div>` : ''}
-                            ${rowData?.e ? `<div><span class="badge bg-rose-500">測驗</span><span class="text-sm font-bold text-slate-700">${rowData.e}</span></div>` : ''}
-                            ${rowData?.r ? `<div><span class="badge bg-sky-500">提醒</span><span class="text-sm font-bold text-slate-700">${rowData.r}</span></div>` : ''}
+                        <div class="info-table">
+                            ${rowData?.g ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-emerald-500">進度</span></div><div class="text-cell">${rowData.g}</div></div>` : ''}
+                            ${rowData?.h ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-orange-400">作業</span></div><div class="text-cell">${rowData.h}</div></div>` : ''}
+                            ${rowData?.e ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-rose-500">測驗</span></div><div class="text-cell">${rowData.e}</div></div>` : ''}
+                            ${rowData?.r ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-sky-500">提醒</span></div><div class="text-cell">${rowData.r}</div></div>` : ''}
                         </div>
                     </div>`;
                 }).join('');
 
-                html += `<div class="day-card ${new Date().toDateString()===curr.toDateString()?'is-today shadow-lg':''}">
+                html += `<div class="day-card ${isToday ? 'is-today shadow-lg' : ''}">
                     <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">
-                        ${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][wd]}</span>
+                        ${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][curr.getDay()]}</span>
                     </div>
                     ${classRows || '<div class="text-xs text-slate-300 italic py-2 text-center">放假日</div>'}
                 </div>`;
@@ -116,7 +114,6 @@
                 const response = await fetch(SHEET_CSV + "&nocache=" + Date.now());
                 const rawText = await response.text();
                 const rows = parseCSV(rawText).slice(1);
-                
                 db = rows.map(r => {
                     if(!r[1]) return null;
                     let cleanD = r[1].split(' ')[0].replace(/\//g, '-');
@@ -125,7 +122,7 @@
                     return { date: finalD, p: String(r[2]), g: r[3], r: r[4], h: r[5], e: r[6] };
                 }).filter(x => x);
                 render();
-            } catch (e) { console.error("Sync Error"); }
+            } catch (e) { render(); }
         }
 
         function changeWeek(offset) { anchorDate.setDate(anchorDate.getDate() + offset); render(); fetchData(); }
