@@ -12,10 +12,34 @@
         .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background: #f0f7ff; }
         
-        /* 核心修復：懸掛縮進排版 */
-        .info-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-        .badge { flex-shrink: 0; font-size: 11px; padding: 3px 8px; border-radius: 6px; color: white; font-weight: bold; width: 42px; text-align: center; margin-top: 2px; }
-        .info-text { flex-grow: 1; font-size: 14px; font-weight: 700; color: #334155; line-height: 1.6; word-break: break-all; }
+        /* 🛠️ 最終版：強制雙欄對齊邏輯 */
+        .info-container { display: table; width: 100%; border-spacing: 0 8px; }
+        .info-row { display: table-row; }
+        .badge-cell { 
+            display: table-cell; 
+            width: 50px; /* 固定標籤欄位寬度 */
+            vertical-align: top; 
+            padding-top: 2px;
+        }
+        .text-cell { 
+            display: table-cell; 
+            vertical-align: top; 
+            font-size: 15px; 
+            font-weight: 700; 
+            color: #334155; 
+            line-height: 1.6;
+            padding-left: 4px; /* 與標籤的間距 */
+        }
+        .badge { 
+            font-size: 11px; 
+            padding: 3px 0; 
+            border-radius: 6px; 
+            color: white; 
+            font-weight: bold; 
+            width: 42px; 
+            display: block; 
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -24,13 +48,11 @@
             <h1 class="text-2xl font-black italic">國文教學看板</h1>
             <p class="text-[11px] opacity-80 mt-1">福山國中 • 張允蒼老師</p>
         </div>
-        
         <div class="nav-sticky">
             <button onclick="changeWeek(-7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl">«</button>
             <span id="weekLabel" class="font-bold text-gray-700">載入中...</span>
             <button onclick="changeWeek(7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl">»</button>
         </div>
-
         <div id="contentList"></div>
     </div>
 
@@ -65,8 +87,7 @@
             const list = document.getElementById('contentList');
             const label = document.getElementById('weekLabel');
             let d = new Date(anchorDate);
-            let day = d.getDay();
-            let mon = new Date(d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)));
+            let mon = new Date(d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)));
             
             label.innerText = (mon.getMonth()+1)+"/"+mon.getDate() + " - " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
 
@@ -81,14 +102,40 @@
                     return `
                     <div class="py-4 border-b border-slate-50 last:border-0">
                         <div class="mb-2"><span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span></div>
-                        <div class="space-y-1">
-                            ${rowData?.g ? `<div class="info-row"><span class="badge bg-emerald-500">進度</span><div class="info-text">${rowData.g}</div></div>` : ''}
-                            ${rowData?.h ? `<div class="info-row"><span class="badge bg-orange-400">作業</span><div class="info-text">${rowData.h}</div></div>` : ''}
-                            ${rowData?.e ? `<div class="info-row"><span class="badge bg-rose-500">測驗</span><div class="info-text">${rowData.e}</div></div>` : ''}
-                            ${rowData?.r ? `<div class="info-row"><span class="badge bg-sky-500">提醒</span><div class="info-text">${rowData.r}</div></div>` : ''}
+                        <div class="info-container">
+                            ${rowData?.g ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-emerald-500">進度</span></div><div class="text-cell">${rowData.g}</div></div>` : ''}
+                            ${rowData?.h ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-orange-400">作業</span></div><div class="text-cell">${rowData.h}</div></div>` : ''}
+                            ${rowData?.e ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-rose-500">測驗</span></div><div class="text-cell">${rowData.e}</div></div>` : ''}
+                            ${rowData?.r ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-sky-500">提醒</span></div><div class="text-cell">${rowData.r}</div></div>` : ''}
                         </div>
                     </div>`;
                 }).join('');
 
                 html += `<div id="${isToday ? 'target-today' : ''}" class="day-card ${isToday ? 'is-today shadow-lg' : ''}">
-                    <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五
+                    <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][curr.getDay()]}</span></div>
+                    ${classRows || '<div class="text-xs text-slate-300 italic py-2 text-center">放假日</div>'}
+                </div>`;
+            }
+            list.innerHTML = html;
+            if (autoScroll) setTimeout(() => { const el = document.getElementById('target-today'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(SHEET_CSV + "&t=" + Date.now());
+                const rawText = await response.text();
+                const rows = parseCSV(rawText).slice(1);
+                db = rows.map(r => {
+                    if(!r[1]) return null;
+                    let parts = r[1].split(' ')[0].replace(/\//g, '-').split('-');
+                    return { date: `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`, p: String(r[2]), g: r[3], r: r[4], h: r[5], e: r[6] };
+                }).filter(x => x);
+                render(false);
+            } catch (e) {}
+        }
+
+        function changeWeek(offset) { anchorDate.setDate(anchorDate.getDate() + offset); render(true); fetchData(); }
+        render(true); fetchData();
+    </script>
+</body>
+</html>
