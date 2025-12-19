@@ -7,11 +7,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* 讓捲動更平滑 */
+        /* 啟用平滑捲動 */
         html { scroll-behavior: smooth; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
         .serif { font-family: 'Noto Serif TC', serif; }
-        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        
+        /* 固定標題列，避免捲動後找不到切換按鈕 */
+        .sticky-header { 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+        }
         
         .badge { 
             display: inline-flex; align-items: center; justify-content: center;
@@ -25,20 +32,24 @@
         .content-text { font-size: 15px; line-height: 1.6; color: #334155; display: flex; align-items: center; margin-bottom: 8px; }
         .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 10px; }
 
-        /* 今日區塊：顯示淺灰色背景 */
+        /* ✅ 今日樣式：淺灰色背景 + 藍色邊框 */
         .is-today { 
             background-color: #f1f5f9 !important; 
-            border: 2px solid #3b82f6 !important; /* 加深邊框顏色方便辨識 */
+            border: 2px solid #3b82f6 !important; 
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
-            scroll-margin-top: 120px; /* 捲動停止時，上方預留一點空間不要頂到頭 */
+            /* 重要：設定捲動停止時的上方間距，避免被 Sticky Header 擋住 */
+            scroll-margin-top: 140px; 
         }
     </style>
 </head>
 <body class="pb-12 text-left">
     <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
-        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg sticky top-0 z-50">
+        
+        <div class="sticky-header pt-10 pb-16 px-8 text-white rounded-b-[3rem] shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-9
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">正在同步...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:
