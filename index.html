@@ -39,10 +39,10 @@
         }
         .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
 
-        /* 💡 恢復模式：移除粗黑框，僅使用淺灰色背景標示今日 */
+        /* 💡 恢復模式：今日區塊顯示淺灰色底圖，邊框維持簡潔 */
         .is-today { 
             background-color: #f1f5f9 !important; 
-            border: 1px solid #e2e8f0 !important;
+            border: 1px solid #cbd5e1 !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
     </style>
@@ -68,12 +68,4 @@
     </div>
 
     <script>
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
-        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        
-        const ID_DATE = "entry.1279670059";
-        const ID_PERIOD = "entry.1620291828";
-
-        const baseSchedule = {
-            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
-            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7
+        const csvUrl = "
