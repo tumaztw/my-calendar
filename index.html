@@ -7,16 +7,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        /* 讓捲動更平滑 */
         html { scroll-behavior: smooth; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
         .serif { font-family: 'Noto Serif TC', serif; }
         
-        /* 固定頂部 Header */
+        /* ✅ 固定頂部導航列 */
         .sticky-header { 
-            position: sticky; top: 0; z-index: 50; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
         }
-        
+
         .badge { 
             display: inline-flex; align-items: center; justify-content: center;
             font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px;
@@ -29,18 +32,16 @@
         .content-text { font-size: 15px; line-height: 1.6; color: #334155; display: flex; align-items: center; margin-bottom: 8px; }
         .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 10px; }
 
-        /* ✅ 今日標示：灰色底 + 藍框 */
+        /* ✅ 今日標記與定位間距 */
         .is-today { 
             background-color: #f1f5f9 !important; 
-            border: 2.5px solid #3b82f6 !important; 
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
-            /* 重要：捲動停止位置調整，避免被 Header 擋住 */
-            scroll-margin-top: 140px; 
+            border: 2px solid #3b82f6 !important; 
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+            /* 讓自動捲動停止時，上方留一點空間，不要被 Header 擋住 */
+            scroll-margin-top: 150px; 
         }
 
-        /* 跳轉回今日的懸浮按鈕 */
+        /* 懸浮回今日按鈕 */
         .btn-today {
             position: fixed; bottom: 20px; right: 20px; z-index: 100;
-            background: #1e3a8a; color: white; width: 50px; height: 50px;
-            border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center; font-weight: 9
+            background: #1e3a8a;
