@@ -11,6 +11,7 @@
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); position: sticky; top: 0; z-index: 50; }
         
+        /* 統一區塊排版 */
         .item-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
         .badge { 
             display: inline-flex; align-items: center; justify-content: center; 
@@ -22,8 +23,8 @@
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
         
-        /* 內容字體統一：取消斜體、大小顏色一致 */
-        .content-text { font-size: 0.875rem; color: #475569; line-height: 1.5; font-style: normal !important; }
+        /* 視覺統一：取消斜體，大小與顏色一致 */
+        .content-text { font-size: 0.875rem; color: #475569; line-height: 1.5; font-style: normal !important; font-weight: 500; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -34,9 +35,9 @@
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic">載入日期中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">»</button>
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base text-center">正在抓取最新日期...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
 
@@ -57,9 +58,13 @@
 
         const events = {
             "2025-12-19": "客語演說/朗讀比賽", 
-            "2025-12-22": "服裝儀容檢查", "2025-12-23": "三複習考 Day1", "2025-12-24": "三複習考/國文作業抽查", 
-            "2025-12-25": "行憲紀念日放假", "2026-01-01": "開國紀念日放假",
-            "2026-01-15": "第三次段考 Day1", "2026-01-16": "第三次段考 Day2"
+            "2025-12-22": "服裝儀容檢查", 
+            "2025-12-23": "三複習考 Day1", 
+            "2025-12-24": "三複習考/國文作業抽查", 
+            "2025-12-25": "行憲紀念日放假", 
+            "2026-01-01": "開國紀念日放假",
+            "2026-01-15": "第三次段考 Day1",
+            "2026-01-16": "第三次段考 Day2"
         };
 
         const schedule = {
@@ -97,24 +102,28 @@
                 const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
                 if (matches) rows.push(matches.map(v => v.replace(/^"|"$/g, '').trim()));
             }
-            // 欄位鎖定：[1]日期, [2]節次, [3]進度, [4]提醒, [5]作業, [6]測驗
+            // 欄位對應修正：[1]日期, [2]節次, [3]進度, [4]提醒, [5]作業, [6]測驗
             return rows.slice(1).map(r => ({
                 d: (r[1]||"").replace(/\//g, '-'),
                 p: String(r[2]||""),
-                g: r[3]||"", r: r[4]||"", h: r[5]||"", e: r[6]||""
+                g: r[3]||"", 
+                r: r[4]||"", 
+                h: r[5]||"", 
+                e: r[6]||""
             }));
         }
 
         async function load() {
             try {
-                // 強制加入時間戳參數以跳過快取
-                const res = await fetch(`${csvUrl}&cb=${Date.now()}`);
-                if (!res.ok) throw new Error();
+                // 加入亂數 cb 參數避免瀏覽器快取
+                const res = await fetch(`${csvUrl}&cb=${new Date().getTime()}`);
+                if (!res.ok) throw new Error("Fetch Failed");
                 const text = await res.text();
                 notesData = parseCSV(text);
                 render();
             } catch (err) {
-                setTimeout(load, 2000); // 失敗則兩秒後自動重試
+                console.log("正在重試連接...");
+                setTimeout(load, 2000); 
             }
         }
 
@@ -125,7 +134,7 @@
             let day = d.getDay();
             let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
 
-            label.innerText = `${mon.getMonth()+mon.getDate() > 0 ? mon.getMonth()+1 : ''}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
 
             let html = "";
             for (let i = 0; i < 7; i++) {
@@ -138,4 +147,47 @@
                 let ev = events[dStr];
 
                 let cHtml = Object.entries(todayClasses).map(([p, n]) => {
-                    const nt = notesData.find(x => x.d === dStr
+                    const nt = notesData.find(x => x.d === dStr && x.p === p);
+                    const countdown = countRemainingClasses(dStr, n);
+                    const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
+                    return `
+                    <div class="py-5 border-b border-slate-100 last:border-0 text-left">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
+                                <div class="text-lg font-black text-slate-800">${n}${countdown}</div>
+                            </div>
+                            <a href="${url}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl border border-blue-100 shadow-sm active:scale-95 transition-all font-bold text-xl">✎</a>
+                        </div>
+                        ${nt ? `
+                        <div class="space-y-3">
+                            ${nt.g ? `<div class="item-row"><span class="badge tag-progress">進度</span><span class="content-text flex-1">${nt.g}</span></div>` : ''}
+                            ${nt.h ? `<div class="item-row"><span class="badge tag-homework">作業</span><span class="content-text flex-1">${nt.h}</span></div>` : ''}
+                            ${nt.e ? `<div class="item-row"><span class="badge tag-exam">測驗</span><span class="content-text flex-1">${nt.e}</span></div>` : ''}
+                            ${nt.r ? `<div class="item-row"><span class="badge tag-remind">提醒</span><span class="content-text flex-1">${nt.r}</span></div>` : ''}
+                        </div>` : ''}
+                    </div>`;
+                }).join('');
+
+                html += `
+                <div class="bg-white rounded-[2.5rem] p-7 shadow-xl border border-white/50 ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="text-4xl font-black ${isToday ? 'text-blue-600' : 'text-slate-200'} font-mono">${cur.getDate()}</span>
+                        <span class="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    ${ev ? `<div class="event-bar">🚩 ${ev}</div>` : ''}
+                    <div>${cHtml || '<p class="text-slate-200 text-xs py-2 text-center">本日無課程安排</p>'}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { 
+            anchor.setDate(anchor.getDate()+(n*7)); 
+            document.getElementById('main-list').innerHTML = '<div class="text-center py-20"><div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div><p class="text-slate-400 font-bold">翻閱日曆中...</p></div>';
+            load(); 
+        }
+        window.onload = load;
+    </script>
+</body>
+</html>
