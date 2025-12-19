@@ -6,14 +6,24 @@
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f0f4f8; }
+        /* 💡 指定微軟正黑體為首選字體 */
+        body { 
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif; 
+            background-color: #f0f4f8; 
+        }
         .main-header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-bottom: 5px solid #4f46e5; }
         .card-cartoon { border: 3px solid #000; box-shadow: 5px 5px 0px rgba(0,0,0,0.1); background: white; border-radius: 2rem; margin-bottom: 2rem; padding: 2rem; }
-        .is-today { background-color: #e5e7eb !important; border-color: #6366f1; } /* 淺灰色 */
+        
+        /* 💡 今日色塊：淺灰色 */
+        .is-today { background-color: #e5e7eb !important; border-color: #6366f1; } 
+        
         .badge { display: inline-flex; align-items: center; font-size: 14px; font-weight: 900; padding: 4px 10px; border-radius: 8px; border: 2px solid #000; margin-right: 8px; }
         .tag-progress { background: #bbf7d0; }
         .tag-homework { background: #fef08a; }
         .tag-exam { background: #fecaca; }
+        
+        /* 標題字體加粗 */
+        h1, .font-black { font-weight: 900 !important; }
     </style>
 </head>
 <body>
@@ -22,12 +32,12 @@
             <h1 class="text-3xl font-black">國文教學看板 🦉</h1>
             <p class="text-xs mt-2 bg-black/20 px-3 py-1 rounded-full inline-block">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white border-2 border-black rounded-2xl p-2 flex items-center justify-between shadow-lg text-black">
-                <button onclick="changeWeek(-1)" class="p-2 font-bold">👈 上週</button>
+                <button onclick="changeWeek(-1)" class="p-2 font-bold hover:bg-slate-100 rounded-lg">👈 上週</button>
                 <div id="week-label" class="font-black">讀取中...</div>
-                <button onclick="changeWeek(1)" class="p-2 font-bold">下週 👉</button>
+                <button onclick="changeWeek(1)" class="p-2 font-bold hover:bg-slate-100 rounded-lg">下週 👉</button>
             </div>
         </div>
-        <div id="main-list" class="mt-16 px-6 flex-1">
+        <div id="main-list" class="mt-16 px-6 flex-1 text-left">
             <div class="text-center py-20 text-slate-400">正在努力搬運課表中... 🚛</div>
         </div>
     </div>
@@ -35,6 +45,7 @@
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        
         const baseSchedule = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
@@ -42,12 +53,13 @@
             4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
             5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
         };
+
         let notesData = [];
         let anchor = new Date();
 
         async function fetchNotes() {
             try {
-                const res = await fetch(csvUrl + "?t=" + Date.now());
+                const res = await fetch(csvUrl + "?cache=" + Date.now());
                 const text = await res.text();
                 const rows = text.split('\n').filter(r => r.trim()).slice(1);
                 notesData = rows.map(r => {
@@ -58,3 +70,28 @@
                         progress: (c[3]||"").replace(/"/g, '').trim(),
                         remind: (c[4]||"").replace(/"/g, '').trim(),
                         homework: (c[5]||"").replace(/"/g, '').trim(),
+                        exam: (c[6]||"").replace(/"/g, '').trim()
+                    };
+                });
+            } catch (e) { console.error("資料讀取失敗"); }
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            let d = new Date(anchor);
+            let day = d.getDay();
+            let diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            let monday = new Date(d.setDate(diff));
+
+            label.innerText = `${monday.getMonth()+1}/${monday.getDate()} — ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+
+            let fullHtml = "";
+            for (let i = 0; i < 7; i++) {
+                let current = new Date(monday);
+                current.setDate(monday.getDate() + i);
+                let dStr = `${current.getFullYear()}-${String(current.getMonth()+1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')}`;
+                let isToday = new Date().toDateString() === current.toDateString();
+                let weekday = current.getDay();
+                let
