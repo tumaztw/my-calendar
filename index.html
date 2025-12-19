@@ -5,110 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background-color: #f8fafc; margin: 0; padding-bottom: 30px; }
-        .header { background: #1e3a8a; color: white; padding: 40px 20px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
-        .nav-bar { position: absolute; bottom: -25px; left: 20px; right: 20px; background: white; padding: 12px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #1e3a8a; border: 1px solid #eee; }
-        .card { background: white; margin: 45px 15px 20px; border-radius: 20px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .is-today { border: 2.5px solid #3b82f6; background-color: #f0f9ff; }
-        .badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; margin-right: 6px; color: white; }
-        .tag-p { background: #16a34a; } /* 進度 */
-        .tag-h { background: #d97706; } /* 作業 */
-        .tag-e { background: #dc2626; } /* 測驗 */
-        .content-item { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #334155; }
-        .remind-box { background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 13px; border-left: 4px solid #cbd5e1; color: #475569; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        
+        .main-header { 
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+            position: sticky; top: 0; z-index: 50;
+        }
+        
+        .badge { 
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px;
+            margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px;
+        }
+        .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        
+        .is-today { 
+            background-color: #f1f5f9 !important; 
+            border: 2.5px solid #3b82f6 !important;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        }
+        
+        .remind-box { 
+            background: #f8fafc; border-left: 4px solid #cbd5e1; 
+            padding: 12px; border-radius: 8px; margin-top: 10px; 
+        }
     </style>
 </head>
-<body>
-    <div class="max-w-md mx-auto">
-        <div class="header">
-            <h1 class="text-2xl font-bold italic">國文教學看板</h1>
-            <p class="text-[10px] opacity-60 tracking-widest mt-1">福山國中 • 張允蒼老師</p>
-            <div class="nav-bar">
-                <button onclick="changeWeek(-1)" class="w-10 h-10 font-bold text-xl">«</button>
-                <div id="week-label" class="font-bold text-sm">正在載入週次...</div>
-                <button onclick="changeWeek(1)" class="w-10 h-10 font-bold text-xl">»</button>
+<body class="pb-12 text-left">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">載入中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
-        <div id="main-list"></div>
-    </div>
 
-    <script>
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
-        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        
-        const baseSchedule = {
-            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
-            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
-            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
-            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
-            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
-        };
-
-        let notesData = [];
-        let anchor = new Date();
-
-        // 強大解析器：處理被雙引號包裹的 CSV 內容
-        function parseCSV(text) {
-            const rows = [];
-            const lines = text.split(/\r?\n/);
-            lines.forEach(line => {
-                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                if (matches) {
-                    rows.push(matches.map(val => val.replace(/^"|"$/g, '').trim()));
-                }
-            });
-            return rows.slice(1).map(r => ({
-                date: (r[1]||"").replace(/\//g, '-'),
-                period: r[2]||"",
-                progress: r[3]||"",
-                remind: r[4]||"",
-                homework: r[5]||"",
-                exam: r[6]||""
-            }));
-        }
-
-        async function init() {
-            try {
-                const res = await fetch(`${csvUrl}&t=${Date.now()}`);
-                const text = await res.text();
-                notesData = parseCSV(text);
-            } catch (e) { console.error("CSV Load Error"); }
-            render();
-        }
-
-        function render() {
-            const list = document.getElementById('main-list');
-            const label = document.getElementById('week-label');
-            let d = new Date(anchor);
-            let day = d.getDay();
-            let diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            let mon = new Date(d.setDate(diff));
-
-            label.innerText = (mon.getMonth()+1) + "/" + mon.getDate() + " — " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'});
-
-            let html = "";
-            for (let i = 0; i < 7; i++) {
-                let cur = new Date(mon);
-                cur.setDate(mon.getDate() + i);
-                let dStr = cur.toISOString().split('T')[0];
-                let isToday = new Date().toDateString() === cur.toDateString();
-                let wd = cur.getDay();
-                let classes = baseSchedule[wd] || {};
-
-                let cHtml = Object.entries(classes).map(([p, n]) => {
-                    const nt = notesData.find(x => x.date === dStr && String(x.period) === String(p));
-                    const editUrl = `${formUrl}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
-                    return `
-                    <div style="padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="font-size: 10px; color: #3b82f6; font-weight: bold;">第 ${p} 節</span>
-                                <div style="font-weight: 900; font-size: 18px; color: #1e293b;">${n}</div>
-                            </div>
-                            <a href="${editUrl}" target="_blank" style="background:#f1f5f9; color:#3b82f6; width:35px; height:35px; border-radius:10px; display:flex; align-items:center; justify-content:center; text-decoration:none;">✎</a>
-                        </div>
-                        ${nt ? `
-                            ${nt.progress ? `<div class="content-item"><span class="badge tag-p">進度</span>${nt.progress}</div>` : ''}
-                            ${nt.homework ? `<div class="content-item"><span class="badge tag-h">作業</span>${nt.homework}</div>` : ''}
-                            ${nt.exam ? `<div class="content
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
+            <p class="text-center text-slate-300 py-20 animate-pulse">
