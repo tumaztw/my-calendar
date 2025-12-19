@@ -7,30 +7,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; margin: 0; }
-        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding-bottom: 60px; }
-        .card { background: white; border-radius: 2rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .is-today { border: 3px solid #3b82f6; background-color: #f8fafc; }
-        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; }
-        .tag-progress { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
-        .tag-homework { background: #fffbeb; color: #713f12; border-color: #fde68a; } 
-        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     
-        .tag-remind { background: #f0f9ff; color: #0c4a6e; border-color: #bae6fd; }
-        .content-text { font-size: 0.95rem; color: #0f172a; line-height: 1.6; font-weight: 700; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; margin: 0; }
+        .main-header { background: #1e40af; padding: 40px 20px 60px; text-align: center; color: white; border-radius: 0 0 2rem 2rem; }
+        .week-nav { background: white; margin: -30px 20px 20px; padding: 10px; border-radius: 1rem; display: flex; justify-content: space-between; align-items: center; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }
+        .card { background: white; border-radius: 1.5rem; padding: 1.5rem; margin: 15px; border: 1px solid #e2e8f0; }
+        .is-today { border: 2px solid #2563eb; background-color: #eff6ff; }
+        .badge { font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 4px; margin-right: 8px; }
+        .tag-p { background: #dcfce7; color: #166534; }
+        .tag-h { background: #fef3c7; color: #92400e; }
+        .tag-e { background: #fee2e2; color: #991b1b; }
+        .tag-r { background: #e0f2fe; color: #075985; }
     </style>
 </head>
-<body class="pb-10">
-    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl">
-        <div class="main-header pt-12 px-8 text-white rounded-b-[3rem] relative shadow-lg">
-            <h1 class="text-3xl font-black tracking-tight">國文教學看板</h1>
-            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
-            <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-sm">讀取中</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl">»</button>
-            </div>
+<body>
+
+    <div class="max-w-md mx-auto min-h-screen">
+        <div class="main-header">
+            <h1 class="text-2xl font-black">國文教學看板</h1>
+            <p class="text-xs opacity-70 mt-1">福山國中 • 張允蒼老師</p>
         </div>
-        <div id="main-list" class="mt-16 px-5"></div>
+
+        <div class="week-nav">
+            <button onclick="changeWeek(-1)" class="w-10 h-10 font-bold text-blue-800">«</button>
+            <div id="week-label" class="font-black text-blue-900">載入中...</div>
+            <button onclick="changeWeek(1)" class="w-10 h-10 font-bold text-blue-800">»</button>
+        </div>
+
+        <div id="main-list"></div>
     </div>
 
     <script>
@@ -48,75 +51,84 @@
         let notesData = [];
         let anchor = new Date();
 
-        function formatD(raw) {
-            if (!raw) return "";
-            let d = raw.split(' ')[0].replace(/\//g, '-');
-            let p = d.split('-');
-            return p.length === 3 ? `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}` : d;
+        // 統一日期格式 YYYY-MM-DD
+        function fmtDate(d) {
+            return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
         }
 
-        async function load() {
+        async function loadData() {
             try {
                 const res = await fetch(`${csvUrl}&cb=${Date.now()}`);
                 const text = await res.text();
-                const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-                notesData = lines.map(line => {
-                    const c = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-                    return { d: formatD(c[1]), p: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
+                const rows = text.split('\n').slice(1); // 略過標題列
+                notesData = rows.map(r => {
+                    const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+                    // c[1]=日期, c[2]=節次, c[3]=進度, c[4]=提醒, c[5]=作業, c[6]=測驗
+                    let dStr = c[1] ? c[1].split(' ')[0].replace(/\//g, '-') : "";
+                    if (dStr.split('-').length === 3) {
+                        const p = dStr.split('-');
+                        dStr = `${p[0]}-${p[1].padStart(2,'0')}-${p[2].padStart(2,'0')}`;
+                    }
+                    return { date: dStr, period: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
                 });
-            } catch (e) { }
+            } catch (e) { console.error("Data error"); }
             render();
         }
 
         function render() {
             const list = document.getElementById('main-list');
             const label = document.getElementById('week-label');
+            
             let d = new Date(anchor);
             let day = d.getDay();
             let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
-            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+            let sun = new Date(new Date(mon).setDate(mon.getDate() + 6));
+            
+            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${sun.getMonth()+1}/${sun.getDate()}`;
 
             let html = "";
             for (let i = 0; i < 7; i++) {
-                let cur = new Date(mon); cur.setDate(mon.getDate() + i);
-                let dStr = cur.toISOString().split('T')[0];
+                let cur = new Date(mon);
+                cur.setDate(mon.getDate() + i);
+                let dStr = fmtDate(cur);
                 let isToday = new Date().toDateString() === cur.toDateString();
                 let wd = cur.getDay();
                 let dayClasses = schedule[wd] || {};
 
-                let cHtml = Object.entries(dayClasses).map(([p, n]) => {
-                    const nt = notesData.find(x => x.d === dStr && x.p === p);
+                let cHtml = Object.entries(dayClasses).map(([p, name]) => {
+                    const nt = notesData.find(x => x.date === dStr && x.period === p);
                     return `
-                    <div class="py-4 border-b border-slate-100 last:border-0">
-                        <div class="flex justify-between items-center mb-2">
+                    <div class="py-3 border-b border-slate-100 last:border-0">
+                        <div class="flex justify-between items-start">
                             <div>
-                                <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
-                                <div class="text-lg font-black text-slate-800">${n}</div>
+                                <span class="text-[10px] text-blue-500 font-bold">第 ${p} 節</span>
+                                <div class="font-bold text-slate-800 text-lg">${name}</div>
                             </div>
-                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="w-8 h-8 flex items-center justify-center bg-blue-50 rounded-full text-blue-500 text-lg">✎</a>
+                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" class="text-blue-300 text-xl">✎</a>
                         </div>
-                        <div class="space-y-2">
-                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
-                            ${nt?.h ? `<div class="flex gap-2"><span class="badge tag-homework">作業</span><span class="content-text">${nt.h}</span></div>` : ''}
-                            ${nt?.e ? `<div class="flex gap-2"><span class="badge tag-exam">測驗</span><span class="content-text">${nt.e}</span></div>` : ''}
-                            ${nt?.r ? `<div class="flex gap-2"><span class="badge tag-remind">提醒</span><span class="content-text">${nt.r}</span></div>` : ''}
+                        <div class="mt-2 space-y-1">
+                            ${nt?.g ? `<div><span class="badge tag-p">進度</span><span class="text-sm font-bold">${nt.g}</span></div>` : ''}
+                            ${nt?.h ? `<div><span class="badge tag-h">作業</span><span class="text-sm font-bold">${nt.h}</span></div>` : ''}
+                            ${nt?.e ? `<div><span class="badge tag-e">測驗</span><span class="text-sm font-bold">${nt.e}</span></div>` : ''}
+                            ${nt?.r ? `<div><span class="badge tag-r">提醒</span><span class="text-sm font-bold">${nt.r}</span></div>` : ''}
                         </div>
                     </div>`;
                 }).join('');
 
-                html += `<div class="card ${isToday ? 'is-today' : ''}">
-                    <div class="flex items-center gap-3 mb-3">
-                        <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
-                        <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                html += `
+                <div class="card ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <span class="text-2xl font-black">${cur.getDate()}</span>
+                        <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][wd]}</span>
                     </div>
-                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">本日無課程安排</p>`}</div>
+                    ${cHtml || '<div class="text-slate-300 text-xs italic">本日無課程</div>'}
                 </div>`;
             }
             list.innerHTML = html;
         }
 
-        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); load(); }
-        window.onload = load;
+        function changeWeek(n) { anchor.setDate(anchor.getDate() + (n * 7)); loadData(); }
+        window.onload = loadData;
     </script>
 </body>
 </html>
