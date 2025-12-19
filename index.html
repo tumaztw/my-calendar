@@ -11,6 +11,7 @@
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
         
+        /* 標籤設計 */
         .badge { 
             display: inline-flex;
             align-items: center;
@@ -39,11 +40,11 @@
         }
         .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
 
-        /* 💡 恢復模式：今日區塊顯示淺灰色底圖，邊框維持簡潔 */
+        /* ✨ 今日區域特殊樣式：淺灰色背景 + 簡約細邊框 */
         .is-today { 
             background-color: #f1f5f9 !important; 
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1.5px solid #cbd5e1 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
@@ -52,20 +53,5 @@
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
-            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">同步中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
-            </div>
-        </div>
-
-        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
-
-        <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
-            <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1 uppercase">自動教學日誌系統</p>
-            <p class="text-[9px] text-slate-300 italic">福山國中 • 國文科</p>
-        </div>
-    </div>
-
-    <script>
-        const csvUrl = "
+            
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95
