@@ -12,12 +12,38 @@
         .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background: #f0f7ff; }
 
-        /* ✅ 懸掛縮進核心排版：確保文字不超過標籤 */
-        .info-table { display: table; width: 100%; border-spacing: 0 8px; }
+        /* ✅ 大字版排版設定 */
+        .info-table { display: table; width: 100%; border-spacing: 0 10px; }
         .info-row { display: table-row; }
-        .badge-cell { display: table-cell; width: 50px; vertical-align: top; padding-top: 2px; }
-        .text-cell { display: table-cell; vertical-align: top; font-size: 15px; font-weight: 700; color: #334155; line-height: 1.6; padding-left: 4px; }
-        .badge { font-size: 11px; padding: 3px 0; border-radius: 6px; color: white; font-weight: bold; width: 42px; display: block; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .badge-cell { display: table-cell; width: 60px; vertical-align: top; padding-top: 2px; }
+        
+        /* 💡 放大內容文字至 18px，並增加行高 */
+        .text-cell { 
+            display: table-cell; 
+            vertical-align: top; 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: #1e293b; 
+            line-height: 1.5; 
+            padding-left: 6px; 
+        }
+        
+        /* 💡 放大標籤文字至 13px，寬度加寬至 52px */
+        .badge { 
+            font-size: 13px; 
+            padding: 4px 0; 
+            border-radius: 6px; 
+            color: white; 
+            font-weight: bold; 
+            width: 52px; 
+            display: block; 
+            text-align: center; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+        }
+        
+        /* 💡 放大日期與課程名稱 */
+        .class-title { font-size: 15px; font-weight: 900; }
+        .date-number { font-size: 24px; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -42,92 +68,4 @@
         
         const TIMETABLE = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
-            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
-            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
-            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
-            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
-        };
-
-        let db = [];
-        let anchorDate = new Date();
-
-        function parseCSV(text) {
-            const rows = []; let row = []; let col = ""; let inQuotes = false;
-            for (let i = 0; i < text.length; i++) {
-                let char = text[i];
-                if (char === '"' && text[i+1] === '"') { col += '"'; i++; }
-                else if (char === '"') { inQuotes = !inQuotes; }
-                else if (char === ',' && !inQuotes) { row.push(col.trim()); col = ""; }
-                else if (char === '\n' && !inQuotes) { row.push(col.trim()); rows.push(row); row = []; col = ""; }
-                else { col += char; }
-            }
-            row.push(col.trim()); rows.push(row);
-            return rows;
-        }
-
-        function render() {
-            const list = document.getElementById('contentList');
-            const label = document.getElementById('weekLabel');
-            let d = new Date(anchorDate);
-            let day = d.getDay();
-            let mon = new Date(d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)));
-            
-            label.innerText = (mon.getMonth()+1)+"/"+mon.getDate() + " - " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
-
-            let html = "";
-            for (let i = 0; i < 7; i++) {
-                let curr = new Date(mon); curr.setDate(mon.getDate() + i);
-                let ds_match = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
-                let isToday = new Date().toDateString() === curr.toDateString();
-                
-                let classRows = Object.entries(TIMETABLE[curr.getDay()] || {}).map(([p, name]) => {
-                    const rowData = db.find(x => x.date === ds_match && x.p === String(p));
-                    return `
-                    <div class="py-4 border-b border-slate-50 last:border-0">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span>
-                            <a href="${FORM_BASE}?usp=pp_url&entry.1279670059=${ds_match}&entry.1620291828=${p}" target="_blank" class="text-slate-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-                            </a>
-                        </div>
-                        <div class="info-table">
-                            ${rowData?.g ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-emerald-500">進度</span></div><div class="text-cell">${rowData.g}</div></div>` : ''}
-                            ${rowData?.h ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-orange-400">作業</span></div><div class="text-cell">${rowData.h}</div></div>` : ''}
-                            ${rowData?.e ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-rose-500">測驗</span></div><div class="text-cell">${rowData.e}</div></div>` : ''}
-                            ${rowData?.r ? `<div class="info-row"><div class="badge-cell"><span class="badge bg-sky-500">提醒</span></div><div class="text-cell">${rowData.r}</div></div>` : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-
-                html += `<div class="day-card ${isToday ? 'is-today shadow-lg' : ''}">
-                    <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">
-                        ${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][curr.getDay()]}</span>
-                    </div>
-                    ${classRows || '<div class="text-xs text-slate-300 italic py-2 text-center">放假日</div>'}
-                </div>`;
-            }
-            list.innerHTML = html;
-        }
-
-        async function fetchData() {
-            try {
-                const response = await fetch(SHEET_CSV + "&nocache=" + Date.now());
-                const rawText = await response.text();
-                const rows = parseCSV(rawText).slice(1);
-                db = rows.map(r => {
-                    if(!r[1]) return null;
-                    let cleanD = r[1].split(' ')[0].replace(/\//g, '-');
-                    let parts = cleanD.split('-');
-                    let finalD = parts.length === 3 ? `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}` : "";
-                    return { date: finalD, p: String(r[2]), g: r[3], r: r[4], h: r[5], e: r[6] };
-                }).filter(x => x);
-                render();
-            } catch (e) { render(); }
-        }
-
-        function changeWeek(offset) { anchorDate.setDate(anchorDate.getDate() + offset); render(); fetchData(); }
-        
-        render(); fetchData();
-    </script>
-</body>
-</html>
+            2: { 2: "116 國文", 3: "
