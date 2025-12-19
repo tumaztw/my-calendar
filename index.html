@@ -26,7 +26,7 @@
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-sm">載入中</div>
+                <div id="week-label" class="text-blue-900 font-black text-sm">讀取中</div>
                 <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl">»</button>
             </div>
         </div>
@@ -109,7 +109,7 @@
                         <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
                         <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
                     </div>
-                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">本日無課程</p>`}</div>
+                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">本日無課程安排</p>`}</div>
                 </div>`;
             }
             list.innerHTML = html;
