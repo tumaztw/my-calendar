@@ -11,7 +11,7 @@
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); position: sticky; top: 0; z-index: 50; }
         
-        /* 標籤橫式鎖定與字體統一 */
+        /* 統一項目列排版 */
         .item-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
         .badge { 
             display: inline-flex; align-items: center; justify-content: center; 
@@ -23,6 +23,7 @@
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
         
+        /* 統一字體：無斜體、一致顏色 */
         .content-text { font-size: 0.875rem; color: #475569; line-height: 1.5; font-style: normal !important; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
@@ -31,19 +32,19 @@
 <body class="pb-12 text-left">
     <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
-            <h1 class="text-3xl font-bold serif tracking-tight text-left">國文教學看板</h1>
-            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em] text-left">福山國中 • 張允蒼老師</p>
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">正在同步日期...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl">»</button>
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">日期同步中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
 
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
             <div class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p class="text-slate-400 font-bold">夫子正在研墨，請稍候...</p>
+                <p class="text-slate-400 font-bold">夫子研墨中，請稍候...</p>
             </div>
         </div>
     </div>
@@ -70,4 +71,20 @@
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
             3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
-            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "1
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
+            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
+        };
+
+        let notesData = [];
+        let anchor = new Date();
+
+        function countRemainingClasses(currentDateStr, className) {
+            if (!className || className.includes("閱讀")) return ""; 
+            const cur = new Date(currentDateStr);
+            const target = new Date(EXAM_DATE);
+            if (cur >= target) return "";
+            let count = 0;
+            let tempDate = new Date(cur);
+            while (tempDate < target) {
+                let day = tempDate.getDay();
+                let dateStr = tempDate.toISOString().split
