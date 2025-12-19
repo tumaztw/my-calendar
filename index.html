@@ -93,4 +93,8 @@
                                 <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
                                 <div class="text-lg font-black text-slate-800">${n}</div>
                             </div>
-                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="w-8 h-8 flex items-center justify-center bg-blue-50 rounded-full text-blue-5
+                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="w-8 h-8 flex items-center justify-center bg-blue-50 rounded-full text-blue-500 text-lg">✎</a>
+                        </div>
+                        <div class="space-y-2">
+                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
+                            ${nt?.
