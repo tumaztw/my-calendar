@@ -3,115 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學日誌</title>
+    <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        /* 標籤顏色定義 */
+        .tag-進度 { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .tag-考試 { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .tag-作業 { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        .card-enter { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-12">
-    <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl flex flex-col">
-        <div class="bg-indigo-700 p-6 text-white text-center shadow-lg">
-            <h1 class="text-xl font-bold tracking-tight">張允蒼老師 教學看板</h1>
-            <p class="text-[10px] opacity-80 mt-1 uppercase">Fushan Junior High School • 114-1</p>
-        </div>
-
-        <div class="flex items-center justify-between p-4 bg-white/90 backdrop-blur sticky top-0 border-b z-50">
-            <button onclick="changeWeek(-1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl">◀</button>
-            <div id="week-label" class="font-black text-indigo-900 text-lg">讀取中...</div>
-            <button onclick="changeWeek(1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl">▶</button>
-        </div>
-
-        <div id="main-list" class="flex-1 p-4 space-y-6"></div>
-
-        <div class="px-6 py-4 bg-slate-50 text-[10px] text-gray-400 border-t text-center">
-            📍 楠梓 ⇄ 左營重信路 • 資料即時同步中
-        </div>
-    </div>
-
-    <script>
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
-        const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        const dateId = "entry.1279670059"; 
-        const periodId = "entry.1620291828";
-
-        // 依據教師課表設定
-        const baseSchedule = {
-            1: { 1: "109 國語", 2: "117 國語", 4: "116 國語" },
-            2: { 2: "116 國語", 3: "109 國語", 5: "117 國語", 7: "116 閱讀" },
-            3: { 2: "109 國語", 3: "116 國語", 7: "117 國語" },
-            4: { 1: "109 國語", 3: "117 國語", 4: "116 國語", 6: "109 閱讀" },
-            5: { 2: "116 國語", 5: "117 國語", 7: "109 國語" }
-        };
-
-        let notesData = []; 
-        let anchor = new Date();
-
-        async function fetchNotes() {
-            try {
-                const res = await fetch(csvUrl);
-                const text = await res.text();
-                const rows = text.split('\n').slice(1);
-                notesData = rows.map(r => {
-                    const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    return { 
-                        d: c[1]?.replace(/"/g, '').trim(), // 日期在第 2 欄
-                        p: c[2]?.replace(/"/g, '').trim(), // 節次在第 3 欄
-                        t: c[3]?.replace(/"/g, '').trim()  // 進度在第 4 欄
-                    };
-                });
-            } catch (e) {}
-            render();
-        }
-
-        function render() {
-            const list = document.getElementById('main-list');
-            const label = document.getElementById('week-label');
-            list.innerHTML = '';
+<body class="pb-12">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight text-white">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em] text-white">福山國中 • 張允蒼老師</p>
             
-            let curr = new Date(anchor);
-            let day = curr.getDay();
-            let diff = curr.getDate() - day + (day === 0 ? -6 : 1);
-            let monday = new Date(curr.setDate(diff));
-
-            label.innerText = `${monday.getMonth()+1}/${monday.getDate()} - ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'})}`;
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(monday);
-                d.setDate(monday.getDate() + i);
-                let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                let isToday = new Date().toDateString() === d.toDateString();
-                let weekday = d.getDay();
-
-                let classes = baseSchedule[weekday] || {};
-                let classHtml = Object.entries(classes).map(([p, n]) => {
-                    // 比對資料庫內容
-                    const note = notesData.find(note => note.d === dStr && String(note.p) === String(p));
-                    const smartUrl = `${formBaseUrl}?usp=pp_url&${dateId}=${dStr}&${periodId}=${p}`;
-
-                    return `
-                    <div class="py-3 border-b border-slate-50 last:border-0">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-[10px] font-black text-indigo-500 uppercase">第 ${p} 節</span>
-                                <div class="text-sm font-bold text-slate-700">${n}</div>
-                            </div>
-                            <a href="${smartUrl}" target="_blank" class="text-[10px] bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg font-bold">🖊️ 記進度</a>
-                        </div>
-                        ${note ? `<div class="mt-2 bg-amber-50 border-l-4 border-amber-400 p-2 text-[11px] text-amber-900 rounded">📝 ${note.t}</div>` : ''}
-                    </div>`;
-                }).join('');
-
-                list.innerHTML += `
-                    <div class="p-5 bg-white rounded-3xl shadow-sm border ${isToday ? 'border-indigo-500 ring-2 ring-indigo-50' : 'border-slate-100'}">
-                        <div class="flex items-center gap-2 mb-4">
-                            <span class="text-2xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-400'}">${d.getDate()}</span>
-                            <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
-                        </div>
-                        <div class="space-y-1">${classHtml || '<p class="text-[10px] text-slate-300 italic text-center py-2">本日無課程</p>'}</div>
-                    </div>`;
-            }
-        }
-
-        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); render(); }
-        fetchNotes();
-    </script>
-</body>
-</html>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 hover:bg-blue-50 rounded-xl transition-all font-bold text-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic">載入中...</div>
+                <button onclick="change
