@@ -9,91 +9,76 @@
 <body class="bg-slate-100 min-h-screen">
     <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg">
         <div class="bg-indigo-600 p-6 text-white text-center">
-            <h1 class="text-xl font-bold">福山國中 114-1 週行事曆</h1>
-            <p class="text-xs opacity-75 mt-1">楠梓 ⇄ 左營重信路 通勤助手</p>
+            <h1 class="text-xl font-bold text-white">福山國中 114-1 週行事曆</h1>
+            <p class="text-xs opacity-75 mt-1 text-white">楠梓 ⇄ 左營重信路 通勤助手</p>
         </div>
 
         <div class="flex items-center justify-between p-4 border-b">
-            <button onclick="changeWeek(-1)" class="p-2 hover:bg-gray-100 rounded-full">◀</button>
-            <div id="week-label" class="font-bold text-gray-700 text-lg text-center">
-                </div>
-            <button onclick="changeWeek(1)" class="p-2 hover:bg-gray-100 rounded-full">▶</button>
+            <button onclick="changeWeek(-1)" class="p-2 hover:bg-gray-100 rounded-full font-bold">◀ 上一週</button>
+            <div id="week-label" class="font-bold text-gray-700 text-lg"></div>
+            <button onclick="changeWeek(1)" class="p-2 hover:bg-gray-100 rounded-full font-bold">下一週 ▶</button>
         </div>
 
-        <div id="week-alert" class="m-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm hidden">
-            ⚠️ 本週有重大活動，建議提早出門。
-        </div>
-
-        <div id="week-container" class="p-4 space-y-4">
-            </div>
+        <div id="week-container" class="p-4 space-y-4"></div>
     </div>
 
     <script>
-        // 資料源自福山國中 114-1 行事曆
+        // 從 PDF 完整提取的 114-1 資料
         const events = [
+            { d: "2025-10-15", t: "第一次段考 (Day 1)", type: "exam" },
+            { d: "2025-10-16", t: "第一次段考 (Day 2)", type: "exam" },
+            { d: "2025-11-25", t: "第二次段考 (Day 1)", type: "exam" },
+            { d: "2025-11-26", t: "第二次段考 (Day 2)", type: "exam" },
+            { d: "2025-12-12", t: "校慶運動會 (主要活動)", type: "exam" },
+            { d: "2025-12-13", t: "校慶運動會", type: "exam" },
             { d: "2025-12-15", t: "校慶補假", type: "holiday" },
-            { d: "2025-12-16", t: "班級開班會、畢冊截稿", type: "info" },
-            { d: "2025-12-19", t: "校內語文競賽", type: "info" },
             { d: "2025-12-24", t: "國文科作業抽查 (習作/作文)", type: "check" },
             { d: "2026-01-01", t: "元旦放假", type: "holiday" },
-            { d: "2026-01-15", t: "第三次段考 Day 1", type: "exam", alert: true },
-            { d: "2026-01-16", t: "第三次段考 Day 2", type: "exam", alert: true },
+            { d: "2026-01-05", t: "服裝儀容檢查", type: "info" },
+            { d: "2026-01-15", t: "第三次段考 (Day 1)", type: "exam" },
+            { d: "2026-01-16", t: "第三次段考 (Day 2)", type: "exam" },
             { d: "2026-01-23", t: "休業式 (15:30 放學)", type: "holiday" }
         ];
 
-        let currentAnchorDate = new Date(); // 預設顯示今天所在的週
+        let currentAnchorDate = new Date(); // 預設顯示今天
 
         function renderWeek() {
             const container = document.getElementById('week-container');
             const label = document.getElementById('week-label');
-            const weekAlert = document.getElementById('week-alert');
             container.innerHTML = '';
-            weekAlert.classList.add('hidden');
 
-            // 計算本週週一
-            const day = currentAnchorDate.getDay();
-            const diff = currentAnchorDate.getDate() - day + (day === 0 ? -6 : 1);
-            const monday = new Date(currentAnchorDate.setDate(diff));
-            
-            const sunday = new Date(monday);
+            // 取得週一
+            let date = new Date(currentAnchorDate);
+            let day = date.getDay();
+            let diff = date.getDate() - day + (day == 0 ? -6 : 1);
+            let monday = new Date(date.setDate(diff));
+
+            let sunday = new Date(monday);
             sunday.setDate(monday.getDate() + 6);
 
-            // 更新標題日期範圍
             label.innerText = `${monday.getMonth()+1}/${monday.getDate()} - ${sunday.getMonth()+1}/${sunday.getDate()}`;
 
-            // 生成 7 天的格子
             for (let i = 0; i < 7; i++) {
-                const date = new Date(monday);
-                date.setDate(monday.getDate() + i);
-                const dateString = date.toISOString().split('T')[0];
-                const dayName = ["日", "一", "二", "三", "四", "五", "六"][date.getDay()];
+                let d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                let dString = d.getFullYear() + "-" + 
+                              String(d.getMonth()+1).padStart(2, '0') + "-" + 
+                              String(d.getDate()).padStart(2, '0');
                 
-                const dayEvents = events.filter(e => e.d === dateString);
-                const isToday = new Date().toISOString().split('T')[0] === dateString;
+                let dayName = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+                let dayEvents = events.filter(e => e.d === dString);
+                let isToday = new Date().toISOString().split('T')[0] === dString;
 
                 let eventHtml = '';
                 dayEvents.forEach(e => {
-                    if (e.alert) weekAlert.classList.remove('hidden');
-                    const color = { exam: 'bg-red-500', holiday: 'bg-green-500', check: 'bg-blue-500', info: 'bg-gray-400' }[e.type];
-                    eventHtml += `<div class="mt-1 text-sm font-bold text-slate-700 flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full ${color}"></span> ${e.t}
+                    const colors = { exam: 'bg-red-500', holiday: 'bg-green-500', check: 'bg-blue-500', info: 'bg-slate-400' };
+                    eventHtml += `<div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full ${colors[e.type]}"></span>
+                                    <span class="text-sm font-bold text-gray-800">${e.t}</span>
                                   </div>`;
                 });
 
                 container.innerHTML += `
-                    <div class="flex gap-4 items-start ${isToday ? 'bg-indigo-50 -mx-4 px-4 py-2' : ''}">
-                        <div class="w-12 text-center shrink-0">
-                            <p class="text-[10px] text-gray-400 uppercase font-bold">${dayName}</p>
-                            <p class="text-lg font-mono ${isToday ? 'text-indigo-600 font-black' : 'text-gray-600'}">${date.getDate()}</p>
-                        </div>
-                        <div class="flex-1 pb-4 border-b border-gray-100 min-h-[50px]">
-                            ${eventHtml || '<p class="text-xs text-gray-300 mt-2">無重要記事</p>'}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function changeWeek(offset) {
-            currentAnchorDate.setDate(currentAnchorDate.getDate() + (offset * 7));
-            render
+                    <div class="flex gap-4 p-2 ${isToday ? 'bg-indigo-50 rounded-xl ring-1 ring-indigo-200' : ''}">
+                        <div class="w-10 text-center shrink-0">
+                            <div class="text-[10px] text-gray-400 font
