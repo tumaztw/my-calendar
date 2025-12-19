@@ -18,7 +18,7 @@
     </style>
 </head>
 <body class="pb-12 text-left">
-    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white text-left">
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
@@ -29,9 +29,7 @@
             </div>
         </div>
 
-        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
-            <div class="text-center py-20 text-slate-400 italic text-sm">請在表單填寫資料後<br>等待 1 分鐘自動更新</div>
-        </div>
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
 
         <div class="p-8 text-center bg-slate-50 border-t border-slate-100">
             <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1">張老師教學日誌系統</p>
@@ -50,94 +48,4 @@
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
             3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
-            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
-            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
-        };
-
-        let notesData = [];
-        let anchor = new Date();
-
-        async function fetchNotes() {
-            try {
-                const res = await fetch(csvUrl + "?t=" + Date.now());
-                const text = await res.text();
-                // 修正：如果 CSV 讀取不到內容，提供空陣列
-                if (!text || text.includes("html")) throw new Error("CSV尚未就緒");
-                
-                const rows = text.split('\n').filter(r => r.trim()).slice(1);
-                notesData = rows.map(r => {
-                    const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    return { 
-                        date: c[1]?.replace(/"/g, '').trim(),    // B: 日期
-                        period: c[2]?.replace(/"/g, '').trim(),  // C: 節次
-                        progress: c[3]?.replace(/"/g, '').trim(),// D: 進度
-                        homework: c[4]?.replace(/"/g, '').trim(),// E: 作業
-                        exam: c[5]?.replace(/"/g, '').trim(),    // F: 考試
-                        remind: c[6]?.replace(/"/g, '').trim()   // G: 提醒
-                    };
-                });
-            } catch (e) { console.log(e); }
-            render();
-        }
-
-        function render() {
-            const list = document.getElementById('main-list');
-            const label = document.getElementById('week-label');
-            
-            let d = new Date(anchor);
-            let day = d.getDay();
-            let diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            let monday = new Date(d.setDate(diff));
-
-            label.innerText = `${monday.getMonth()+1}/${monday.getDate()} — ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
-
-            let fullHtml = "";
-            for (let i = 0; i < 7; i++) {
-                let current = new Date(monday);
-                current.setDate(monday.getDate() + i);
-                let dStr = `${current.getFullYear()}-${String(current.getMonth()+1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')}`;
-                let isToday = new Date().toDateString() === current.toDateString();
-                let weekday = current.getDay();
-
-                let classes = baseSchedule[weekday] || {};
-                let classHtml = Object.entries(classes).map(([p, n]) => {
-                    const note = notesData.find(note => note.date === dStr && String(note.period).includes(String(p)));
-                    const smartUrl = `${formBase}?usp=pp_url&${ID_DATE}=${dStr}&${ID_PERIOD}=${p}`;
-                    
-                    return `
-                    <div class="py-4 border-b border-slate-50 last:border-0">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="text-left">
-                                <span class="text-[9px] font-black text-blue-400 uppercase block">Period ${p}</span>
-                                <div class="text-base font-bold text-slate-800">${n}</div>
-                            </div>
-                            <a href="${smartUrl}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl shadow-sm">✎</a>
-                        </div>
-                        ${note ? `
-                        <div class="mt-1 space-y-2">
-                            ${note.progress ? `<div class="flex items-start text-left"><span class="badge tag-progress">進度</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.progress}</span></div>` : ''}
-                            ${note.homework ? `<div class="flex items-start text-left"><span class="badge tag-homework">作業</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.homework}</span></div>` : ''}
-                            ${note.exam ? `<div class="flex items-start text-left"><span class="badge tag-exam">考試</span><span class="text-[11px] text-slate-600 leading-relaxed">${note.exam}</span></div>` : ''}
-                            ${note.remind ? `<div class="remind-box mt-1 text-left"><span class="text-[10px] font-black text-slate-400 block mb-0.5 tracking-widest uppercase">Memo</span><span class="text-[11px] text-slate-500 italic">${note.remind}</span></div>` : ''}
-                        </div>` : ''}
-                    </div>`;
-                }).join('');
-
-                fullHtml += `
-                    <div class="bg-white rounded-[2rem] p-6 shadow-lg border border-white ${isToday ? 'ring-2 ring-blue-500 ring-offset-4' : ''}">
-                        <div class="flex items-center gap-3 mb-4">
-                            <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'} font-mono">${current.getDate()}</span>
-                            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md text-center">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
-                        </div>
-                        <div class="space-y-1">${classHtml || '<p class="text-center py-4 text-[10px] text-slate-200 italic font-mono uppercase">Reading Day</p>'}</div>
-                    </div>`;
-            }
-            list.innerHTML = fullHtml;
-        }
-
-        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); fetchNotes(); }
-        fetchNotes();
-        setInterval(fetchNotes, 300000);
-    </script>
-</body>
-</html>
+            4: { 1: "109 國文",
