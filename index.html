@@ -13,29 +13,26 @@
             <p class="text-[10px] opacity-80 mt-1 uppercase">Fushan Junior High School • 114-1</p>
         </div>
 
-        <div class="flex items-center justify-between p-4 bg-white/90 backdrop-blur sticky top-0 border-b z-50 shadow-sm">
-            <button onclick="changeWeek(-1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-indigo-100 transition-all text-slate-600">◀</button>
+        <div class="flex items-center justify-between p-4 bg-white/90 backdrop-blur sticky top-0 border-b z-50">
+            <button onclick="changeWeek(-1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl">◀</button>
             <div id="week-label" class="font-black text-indigo-900 text-lg">讀取中...</div>
-            <button onclick="changeWeek(1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-indigo-100 transition-all text-slate-600">▶</button>
+            <button onclick="changeWeek(1)" class="w-12 h-10 flex items-center justify-center bg-slate-100 rounded-xl">▶</button>
         </div>
 
-        <div id="main-list" class="flex-1 p-4 space-y-6">
-            <div class="text-center py-20 text-slate-300 italic animate-pulse">正在從試算表同步資料...</div>
-        </div>
+        <div id="main-list" class="flex-1 p-4 space-y-6"></div>
 
         <div class="px-6 py-4 bg-slate-50 text-[10px] text-gray-400 border-t text-center">
-            📍 楠梓土庫 ⇄ 左營重信路 • 自動同步系統已就緒
+            📍 楠梓 ⇄ 左營重信路 • 資料即時同步中
         </div>
     </div>
 
     <script>
-        // --- 設定區 ---
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
         const dateId = "entry.1279670059"; 
         const periodId = "entry.1620291828";
 
-        const timeSlots = { 1: "08:20", 2: "09:15", 3: "10:10", 4: "11:05", 5: "13:15", 6: "14:10", 7: "15:15" };
+        // 依據教師課表設定
         const baseSchedule = {
             1: { 1: "109 國語", 2: "117 國語", 4: "116 國語" },
             2: { 2: "116 國語", 3: "109 國語", 5: "117 國語", 7: "116 閱讀" },
@@ -53,17 +50,68 @@
                 const text = await res.text();
                 const rows = text.split('\n').slice(1);
                 notesData = rows.map(r => {
-                    // 處理內容中的逗號
                     const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     return { 
-                        d: c[1]?.replace(/"/g, '').trim(), 
-                        p: c[2]?.replace(/"/g, '').trim(), 
-                        t: c[3]?.replace(/"/g, '').trim() 
+                        d: c[1]?.replace(/"/g, '').trim(), // 日期在第 2 欄
+                        p: c[2]?.replace(/"/g, '').trim(), // 節次在第 3 欄
+                        t: c[3]?.replace(/"/g, '').trim()  // 進度在第 4 欄
                     };
                 });
-            } catch (e) { console.error("CSV讀取失敗"); }
+            } catch (e) {}
             render();
         }
 
         function render() {
-            const
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            list.innerHTML = '';
+            
+            let curr = new Date(anchor);
+            let day = curr.getDay();
+            let diff = curr.getDate() - day + (day === 0 ? -6 : 1);
+            let monday = new Date(curr.setDate(diff));
+
+            label.innerText = `${monday.getMonth()+1}/${monday.getDate()} - ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'})}`;
+
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                let dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                let isToday = new Date().toDateString() === d.toDateString();
+                let weekday = d.getDay();
+
+                let classes = baseSchedule[weekday] || {};
+                let classHtml = Object.entries(classes).map(([p, n]) => {
+                    // 比對資料庫內容
+                    const note = notesData.find(note => note.d === dStr && String(note.p) === String(p));
+                    const smartUrl = `${formBaseUrl}?usp=pp_url&${dateId}=${dStr}&${periodId}=${p}`;
+
+                    return `
+                    <div class="py-3 border-b border-slate-50 last:border-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-black text-indigo-500 uppercase">第 ${p} 節</span>
+                                <div class="text-sm font-bold text-slate-700">${n}</div>
+                            </div>
+                            <a href="${smartUrl}" target="_blank" class="text-[10px] bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg font-bold">🖊️ 記進度</a>
+                        </div>
+                        ${note ? `<div class="mt-2 bg-amber-50 border-l-4 border-amber-400 p-2 text-[11px] text-amber-900 rounded">📝 ${note.t}</div>` : ''}
+                    </div>`;
+                }).join('');
+
+                list.innerHTML += `
+                    <div class="p-5 bg-white rounded-3xl shadow-sm border ${isToday ? 'border-indigo-500 ring-2 ring-indigo-50' : 'border-slate-100'}">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-2xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-400'}">${d.getDate()}</span>
+                            <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
+                        </div>
+                        <div class="space-y-1">${classHtml || '<p class="text-[10px] text-slate-300 italic text-center py-2">本日無課程</p>'}</div>
+                    </div>`;
+            }
+        }
+
+        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); render(); }
+        fetchNotes();
+    </script>
+</body>
+</html>
