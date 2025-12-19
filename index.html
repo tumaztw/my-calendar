@@ -1,157 +1,79 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的個人化網頁</title>
+    <title>張老師 國文教學看板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* CSS 樣式設定 */
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --text-color: #333;
-            --bg-color: #f4f7f6;
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        
+        .badge { 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; 
+            font-weight: 900;
+            padding: 4px 10px; 
+            border-radius: 6px;
+            margin-right: 12px;
+            border: 1.5px solid; 
+            min-width: 55px;
+            height: 28px;
+            vertical-align: middle;
         }
-
-        body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
+        .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        
+        .content-text {
+            font-size: 16px; 
+            line-height: 28px; 
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
         }
+        .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
 
-        header {
-            background: var(--primary-color);
-            color: white;
-            padding: 2rem 0;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        nav {
-            background: #fff;
-            padding: 1rem;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            border-bottom: 1px solid #ddd;
-        }
-
-        nav a {
-            margin: 0 15px;
-            text-decoration: none;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        nav a:hover {
-            color: var(--accent-color);
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 20px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-
-        section {
-            padding: 40px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .btn {
-            display: inline-block;
-            background: var(--accent-color);
-            color: white;
-            padding: 10px 25px;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background: #2980b9;
-        }
-
-        footer {
-            text-align: center;
-            padding: 20px;
-            background: var(--primary-color);
-            color: white;
-            margin-top: 40px;
-        }
-
-        /* 響應式設計 */
-        @media (max-width: 600px) {
-            .container { margin: 10px; padding: 15px; }
+        /* 💡 恢復模式：移除粗黑框，僅使用淺灰色背景標示今日 */
+        .is-today { 
+            background-color: #f1f5f9 !important; 
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
-<body>
-
-    <header>
-        <h1>歡迎來到我的網站</h1>
-        <p>這是一個使用 HTML5, CSS3 建立的完整範例</p>
-    </header>
-
-    <nav>
-        <a href="#about">關於我</a>
-        <a href="#services">服務項目</a>
-        <a href="#contact">聯絡我們</a>
-    </nav>
-
-    <div class="container">
-        
-        <section id="about">
-            <h2>關於我們</h2>
-            <p>這是一個示範網頁的段落。你可以利用這個空間來描述你的背景、興趣或是公司的營運理念。現代網頁設計講求簡潔與易讀性。</p>
-            <button class="btn" onclick="showAlert()">點擊互動</button>
-        </section>
-
-        <section id="services">
-            <h2>服務項目</h2>
-            <ul>
-                <li><strong>網頁前端開發：</strong> 使用最新的技術如 HTML/CSS/JS。</li>
-                <li><strong>使用者體驗設計：</strong> 打造直覺且美觀的界面。</li>
-                <li><strong>回應式佈局：</strong> 確保網頁在手機與電腦上都能完美顯示。</li>
-            </ul>
-        </section>
-
-        <section id="contact">
-            <h2>聯絡我們</h2>
-            <p>如果你有任何問題，歡迎隨時與我們連繫。</p>
-            <p>電子郵件：example@email.com</p>
+<body class="pb-12 text-left">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">同步中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
+            </div>
         </div>
 
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
+
+        <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1 uppercase">自動教學日誌系統</p>
+            <p class="text-[9px] text-slate-300 italic">福山國中 • 國文科</p>
+        </div>
     </div>
 
-    <footer>
-        <p>&copy; 2023 我的網頁版權所有</p>
-    </footer>
-
     <script>
-        // JavaScript 互動功能
-        function showAlert() {
-            alert('感謝你的點擊！這是一個 JavaScript 觸發的對話視窗。');
-        }
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        
+        const ID_DATE = "entry.1279670059";
+        const ID_PERIOD = "entry.1620291828";
 
-        // 平滑捲動功能
-        document.querySelectorAll('nav a').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const section = document.querySelector(this.getAttribute('href'));
-                section.scrollIntoView({ behavior: 'smooth' });
-            });
-        });
-    </script>
-
-</body>
-</html>
+        const baseSchedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7
