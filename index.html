@@ -10,42 +10,13 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
-        
-        /* 標籤設計 */
-        .badge { 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px; 
-            font-weight: 900;
-            padding: 4px 10px; 
-            border-radius: 6px;
-            margin-right: 12px;
-            border: 1.5px solid; 
-            min-width: 55px;
-            height: 28px;
-            vertical-align: middle;
-        }
+        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; padding: 4px 10px; border-radius: 6px; margin-right: 12px; border: 1.5px solid; min-width: 55px; height: 28px; vertical-align: middle; }
         .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-        
-        .content-text {
-            font-size: 16px; 
-            line-height: 28px; 
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+        .content-text { font-size: 16px; line-height: 28px; color: #1e293b; display: flex; align-items: center; margin-bottom: 10px; }
         .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
-
-        /* ✨ 今日區域特殊樣式：淺灰色背景 + 簡約細邊框 */
-        .is-today { 
-            background-color: #f1f5f9 !important; 
-            border: 1.5px solid #cbd5e1 !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        }
+        .is-today { background-color: #f1f5f9 !important; border: 1.5px solid #cbd5e1 !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
 <body class="pb-12 text-left">
@@ -53,5 +24,30 @@
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
-            
-            <div class="absolute -bottom-7 left-6 right-6 bg-white/95
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">連線中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
+            </div>
+        </div>
+
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
+            <div id="error-msg" class="hidden p-6 text-center text-red-500 font-bold bg-red-50 rounded-2xl border border-red-100 mx-4 mt-10"></div>
+        </div>
+
+        <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1 uppercase">自動教學日誌系統</p>
+            <p class="text-[9px] text-slate-300 italic">福山國中 • 國文科</p>
+        </div>
+    </div>
+
+    <script>
+        // 1. 請確保此連結在瀏覽器打開能直接下載 CSV
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        const ID_DATE = "entry.1279670059";
+        const ID_PERIOD = "entry.1620291828";
+
+        const baseSchedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文
