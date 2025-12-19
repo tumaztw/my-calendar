@@ -10,7 +10,7 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
-        /* 標籤顏色定義 */
+        /* 類別標籤顏色 */
         .tag-進度 { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .tag-考試 { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .tag-作業 { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
@@ -21,10 +21,9 @@
 <body class="pb-12">
     <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
-            <h1 class="text-3xl font-bold serif tracking-tight text-white">國文教學看板</h1>
-            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em] text-white">福山國中 • 張允蒼老師</p>
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 hover:bg-blue-50 rounded-xl transition-all font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base italic">載入中...</div>
-                <button onclick="change
+                <div id="week-label" class="text-blue
