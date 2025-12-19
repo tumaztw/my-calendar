@@ -12,13 +12,10 @@
         .card { background: white; border-radius: 2rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background-color: #f8fafc; }
         .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; }
-        
-        /* 老師要求的文字顏色深色強化 */
         .tag-progress { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
-        .tag-homework { background: #fffbeb; color: #713f12; border-color: #fde68a; } /* 深琥珀色 */
-        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     /* 深濃紅色 */
+        .tag-homework { background: #fffbeb; color: #713f12; border-color: #fde68a; } 
+        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     
         .tag-remind { background: #f0f9ff; color: #0c4a6e; border-color: #bae6fd; }
-        
         .content-text { font-size: 0.95rem; color: #0f172a; line-height: 1.6; font-weight: 700; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -30,11 +27,117 @@
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-sm">載入日期中...</div>
+                <div id="week-label" class="text-blue-900 font-black text-sm">載入中...</div>
                 <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">»</button>
             </div>
         </div>
+        <div id="main-list" class="mt-16 px-5"></div>
+    </div>
 
-        <div id="main-list" class="mt-16 px-5">
-            <div class="text-center py-10 text-slate-400 font-bold">正在同步雲端卷宗...</div>
-        </div>
+    <script>
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        const EXAM_DATE = "2026-01-15"; 
+        const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
+
+        const schedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
+            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
+            5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
+        };
+
+        const events = { "2025-12-19": "客語比賽", "2025-12-23": "三複習考 Day1", "2025-12-25": "行憲紀念日(放假)", "2026-01-01": "元旦(放假)", "2026-01-15": "第三次段考 Day1" };
+
+        let notesData = [];
+        let anchor = new Date();
+
+        function countLeft(dateStr, className) {
+            if (!className || className.includes("閱讀")) return "";
+            let target = new Date(EXAM_DATE), cur = new Date(dateStr), count = 0;
+            let temp = new Date(cur);
+            while(temp < target) {
+                let d = temp.getDay(), s = temp.toISOString().split('T')[0];
+                if (d >= 1 && d <= 5 && !HOLIDAYS.includes(s)) {
+                    if (schedule[d] && Object.values(schedule[d]).includes(className)) count++;
+                }
+                temp.setDate(temp.getDate() + 1);
+            }
+            return `<span class="text-[10px] text-slate-400 font-bold ml-1">(段三倒數 ${count} 節)</span>`;
+        }
+
+        async function load() {
+            try {
+                const response = await fetch(`${csvUrl}&cb=${Date.now()}`);
+                const text = await response.text();
+                const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+                notesData = lines.map(line => {
+                    const c = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+                    // 修正日期比對，將 2025/12/19 轉化為標準格式
+                    let datePart = c[1]?.split(' ')[0].replace(/\//g, '-');
+                    if(datePart && datePart.split('-')[1]?.length === 1) {
+                        let parts = datePart.split('-');
+                        datePart = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+                    }
+                    return { d: datePart, p: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
+                });
+            } catch (e) { console.log("Load failed"); }
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('main-list');
+            const label = document.getElementById('week-label');
+            let d = new Date(anchor);
+            let day = d.getDay();
+            let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
+            label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                let cur = new Date(mon); cur.setDate(mon.getDate() + i);
+                let dStr = cur.toISOString().split('T')[0];
+                let isToday = new Date().toDateString() === cur.toDateString();
+                let wd = cur.getDay();
+                let isHoliday = HOLIDAYS.includes(dStr);
+                let dayClasses = isHoliday ? {} : (schedule[wd] || {}); // 假日強制清空課程
+                let ev = events[dStr];
+
+                let cHtml = Object.entries(dayClasses).map(([p, n]) => {
+                    const nt = notesData.find(x => x.d === dStr && x.p === p);
+                    return `
+                    <div class="py-4 border-b border-slate-100 last:border-0">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
+                                <div class="text-lg font-black text-slate-800">${n}${countLeft(dStr, n)}</div>
+                            </div>
+                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="w-8 h-8 flex items-center justify-center bg-blue-50 rounded-full text-blue-500 text-lg">✎</a>
+                        </div>
+                        <div class="space-y-2">
+                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
+                            ${nt?.h ? `<div class="flex gap-2"><span class="badge tag-homework">作業</span><span class="content-text">${nt.h}</span></div>` : ''}
+                            ${nt?.e ? `<div class="flex gap-2"><span class="badge tag-exam">測驗</span><span class="content-text">${nt.e}</span></div>` : ''}
+                            ${nt?.r ? `<div class="flex gap-2"><span class="badge tag-remind">提醒</span><span class="content-text">${nt.r}</span></div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="card ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
+                        <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    ${ev ? `<div class="event-bar">🚩 ${ev}</div>` : ''}
+                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">${isHoliday ? '國定假日放假' : '本日無課程安排'}</p>`}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); load(); }
+        window.onload = load;
+    </script>
+</body>
+</html>
