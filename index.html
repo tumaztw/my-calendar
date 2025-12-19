@@ -6,25 +6,29 @@
     <title>張老師國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #f1f5f9; margin: 0; font-family: sans-serif; }
-        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 20px 55px; text-align: center; color: white; border-radius: 0 0 2.5rem 2.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .nav-container { background: white; margin: -35px 15px 15px; padding: 12px; border-radius: 1.2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.8); }
-        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; transition: transform 0.2s; }
+        body { background: #f1f5f9; margin: 0; font-family: sans-serif; scroll-behavior: smooth; }
+        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 20px 55px; text-align: center; color: white; border-radius: 0 0 2.5rem 2.5rem; }
+        .nav-sticky { background: white; margin: -35px 15px 15px; padding: 12px; border-radius: 1.2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 100; }
+        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background: #f0f7ff; }
-        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; margin-right: 6px; color: white; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* 核心修復：懸掛縮進排版 */
+        .info-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        .badge { flex-shrink: 0; font-size: 11px; padding: 3px 8px; border-radius: 6px; color: white; font-weight: bold; width: 42px; text-align: center; margin-top: 2px; }
+        .info-text { flex-grow: 1; font-size: 14px; font-weight: 700; color: #334155; line-height: 1.6; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div class="max-w-md mx-auto min-h-screen">
+    <div class="max-w-md mx-auto min-h-screen pb-10">
         <div class="header">
-            <h1 class="text-2xl font-black tracking-wider">國文教學看板</h1>
+            <h1 class="text-2xl font-black italic">國文教學看板</h1>
             <p class="text-[11px] opacity-80 mt-1">福山國中 • 張允蒼老師</p>
         </div>
         
-        <div class="nav-container">
-            <button onclick="changeWeek(-7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl hover:bg-blue-50 rounded-full">«</button>
-            <span id="weekLabel" class="font-bold text-gray-700">同步資料中...</span>
-            <button onclick="changeWeek(7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl hover:bg-blue-50 rounded-full">»</button>
+        <div class="nav-sticky">
+            <button onclick="changeWeek(-7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl">«</button>
+            <span id="weekLabel" class="font-bold text-gray-700">載入中...</span>
+            <button onclick="changeWeek(7)" class="w-10 h-10 flex items-center justify-center text-blue-800 font-black text-xl">»</button>
         </div>
 
         <div id="contentList"></div>
@@ -32,8 +36,6 @@
 
     <script>
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
-        const FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
-        
         const TIMETABLE = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
@@ -45,12 +47,8 @@
         let db = [];
         let anchorDate = new Date();
 
-        // 核心解析器：處理 CSV 內部的雙引號與逗號問題
         function parseCSV(text) {
-            const rows = [];
-            let row = [];
-            let col = "";
-            let inQuotes = false;
+            const rows = []; let row = []; let col = ""; let inQuotes = false;
             for (let i = 0; i < text.length; i++) {
                 let char = text[i];
                 if (char === '"' && text[i+1] === '"') { col += '"'; i++; }
@@ -63,7 +61,7 @@
             return rows;
         }
 
-        function render() {
+        function render(autoScroll = false) {
             const list = document.getElementById('contentList');
             const label = document.getElementById('weekLabel');
             let d = new Date(anchorDate);
@@ -75,62 +73,22 @@
             let html = "";
             for (let i = 0; i < 7; i++) {
                 let curr = new Date(mon); curr.setDate(mon.getDate() + i);
-                let ds = curr.getFullYear()+"-"+String(curr.getMonth()+ mon.getMonth() === curr.getMonth() ? curr.getMonth()+1 : curr.getMonth()+1).padStart(2,'0')+"-"+String(curr.getDate()).padStart(2,'0');
-                // 為了日期比對正確，重寫 ds 生成
                 let ds_match = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
+                let isToday = new Date().toDateString() === curr.toDateString();
                 
-                let wd = curr.getDay();
-                let classes = TIMETABLE[wd] || {};
-
-                let classRows = Object.entries(classes).map(([p, name]) => {
+                let classRows = Object.entries(TIMETABLE[curr.getDay()] || {}).map(([p, name]) => {
                     const rowData = db.find(x => x.date === ds_match && x.p === String(p));
                     return `
                     <div class="py-4 border-b border-slate-50 last:border-0">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span>
-                            <a href="${FORM_BASE}?usp=pp_url&entry.1279670059=${ds_match}&entry.1620291828=${p}" target="_blank" class="text-slate-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
-                            </a>
-                        </div>
-                        <div class="mt-2 space-y-2">
-                            ${rowData?.g ? `<div><span class="badge bg-emerald-500">進度</span><span class="text-sm font-bold text-slate-700">${rowData.g}</span></div>` : ''}
-                            ${rowData?.h ? `<div><span class="badge bg-orange-400">作業</span><span class="text-sm font-bold text-slate-700">${rowData.h}</span></div>` : ''}
-                            ${rowData?.e ? `<div><span class="badge bg-rose-500">測驗</span><span class="text-sm font-bold text-slate-700">${rowData.e}</span></div>` : ''}
-                            ${rowData?.r ? `<div><span class="badge bg-sky-500">提醒</span><span class="text-sm font-bold text-slate-700">${rowData.r}</span></div>` : ''}
+                        <div class="mb-2"><span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span></div>
+                        <div class="space-y-1">
+                            ${rowData?.g ? `<div class="info-row"><span class="badge bg-emerald-500">進度</span><div class="info-text">${rowData.g}</div></div>` : ''}
+                            ${rowData?.h ? `<div class="info-row"><span class="badge bg-orange-400">作業</span><div class="info-text">${rowData.h}</div></div>` : ''}
+                            ${rowData?.e ? `<div class="info-row"><span class="badge bg-rose-500">測驗</span><div class="info-text">${rowData.e}</div></div>` : ''}
+                            ${rowData?.r ? `<div class="info-row"><span class="badge bg-sky-500">提醒</span><div class="info-text">${rowData.r}</div></div>` : ''}
                         </div>
                     </div>`;
                 }).join('');
 
-                html += `<div class="day-card ${new Date().toDateString()===curr.toDateString()?'is-today shadow-lg':''}">
-                    <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">
-                        ${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五','週六'][wd]}</span>
-                    </div>
-                    ${classRows || '<div class="text-xs text-slate-300 italic py-2 text-center">放假日</div>'}
-                </div>`;
-            }
-            list.innerHTML = html;
-        }
-
-        async function fetchData() {
-            try {
-                const response = await fetch(SHEET_CSV + "&nocache=" + Date.now());
-                const rawText = await response.text();
-                const rows = parseCSV(rawText).slice(1);
-                
-                db = rows.map(r => {
-                    if(!r[1]) return null;
-                    let cleanD = r[1].split(' ')[0].replace(/\//g, '-');
-                    let parts = cleanD.split('-');
-                    let finalD = parts.length === 3 ? `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}` : "";
-                    return { date: finalD, p: String(r[2]), g: r[3], r: r[4], h: r[5], e: r[6] };
-                }).filter(x => x);
-                render();
-            } catch (e) { console.error("Sync Error"); }
-        }
-
-        function changeWeek(offset) { anchorDate.setDate(anchorDate.getDate() + offset); render(); fetchData(); }
-        
-        render(); fetchData();
-    </script>
-</body>
-</html>
+                html += `<div id="${isToday ? 'target-today' : ''}" class="day-card ${isToday ? 'is-today shadow-lg' : ''}">
+                    <div class="font-black text-slate-800 text-xl flex items-baseline gap-2 mb-2">${curr.getDate()} <span class="text-xs text-slate-400 font-bold">${['週日','週一','週二','週三','週四','週五
