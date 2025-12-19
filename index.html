@@ -5,37 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; text-align: left; }
-        .serif { font-family: 'Noto Serif TC', serif; }
-        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); position: sticky; top: 0; z-index: 50; }
-        .item-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; white-space: nowrap; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; margin: 0; }
+        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding-bottom: 60px; }
+        .card { background: white; border-radius: 2rem; padding: 1.5rem; margin-bottom: 2rem; shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .is-today { border: 3px solid #3b82f6; background-color: #f8fafc; }
+        .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; }
         
-        /* 顏色深層加強版 */
-        .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        .tag-homework { background: #fffbeb; color: #7c2d12; border-color: #fde68a; } /* 加深作業色 */
-        .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }     /* 加深測驗色 */
-        .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
+        /* 老師要求的文字加深 */
+        .tag-progress { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
+        .tag-homework { background: #fffbeb; color: #713f12; border-color: #fef3c7; } /* 深琥珀 */
+        .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     /* 深紅 */
+        .tag-remind { background: #f0f9ff; color: #0c4a6e; border-color: #bae6fd; }
         
-        .content-text { font-size: 0.875rem; color: #1e293b; line-height: 1.5; font-weight: 700; }
-        .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
+        .content-text { font-size: 0.95rem; color: #0f172a; line-height: 1.6; font-weight: 700; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
 </head>
-<body class="pb-12">
-    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
-        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
-            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+<body class="pb-10">
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl">
+        <div class="main-header pt-12 px-8 text-white rounded-b-[3rem] relative">
+            <h1 class="text-3xl font-black tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
-            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl active:scale-90 transition-transform">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base text-center">載入中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl active:scale-90 transition-transform">»</button>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-sm">載入中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl">»</button>
             </div>
         </div>
-        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
+
+        <div id="main-list" class="mt-16 px-5">
+            </div>
     </div>
 
     <script>
@@ -52,31 +53,28 @@
             5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
         };
 
-        const events = { "2025-12-19": "客語比賽", "2025-12-23": "三複習考 Day1", "2025-12-24": "三複習考/作業抽查", "2026-01-15": "第三次段考 Day1" };
+        const events = { "2025-12-19": "客語比賽", "2025-12-23": "三複習考 Day1", "2026-01-15": "第三次段考 Day1" };
 
         let notesData = [];
         let anchor = new Date();
 
-        // 核心倒數函數修正
-        function countRemainingClasses(currentDateStr, className) {
-            if (!className || className.includes("閱讀")) return ""; 
-            const cur = new Date(currentDateStr);
-            const target = new Date(EXAM_DATE);
+        function countLeft(dateStr, className) {
+            if (!className || className.includes("閱讀")) return "";
+            let target = new Date(EXAM_DATE), cur = new Date(dateStr), count = 0;
             if (cur >= target) return "";
-            let count = 0;
-            let tempDate = new Date(cur);
-            while (tempDate < target) {
-                let day = tempDate.getDay();
-                let dStr = tempDate.toISOString().split('T')[0];
-                if (day >= 1 && day <= 5 && !HOLIDAYS.includes(dStr)) {
-                    if (schedule[day] && Object.values(schedule[day]).includes(className)) count++;
+            let temp = new Date(cur);
+            while(temp < target) {
+                let d = temp.getDay(), s = temp.toISOString().split('T')[0];
+                if (d >= 1 && d <= 5 && !HOLIDAYS.includes(s)) {
+                    if (schedule[d] && Object.values(schedule[d]).includes(className)) count++;
                 }
-                tempDate.setDate(tempDate.getDate() + 1);
+                temp.setDate(temp.getDate() + 1);
             }
-            return `<span class="text-[10px] text-slate-400 font-bold ml-1"> (段三 * ${count} 節)</span>`;
+            return `<span class="text-[10px] text-slate-400 font-bold ml-1">(段三倒數 ${count} 節)</span>`;
         }
 
         async function load() {
+            render(); // 先畫出框架，解決卡住問題
             try {
                 const res = await fetch(`${csvUrl}&t=${Date.now()}`);
                 const text = await res.text();
@@ -85,8 +83,8 @@
                     const c = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
                     return { d: c[1]?.replace(/\//g, '-'), p: String(c[2]), g: c[3], r: c[4], h: c[5], e: c[6] };
                 });
-            } catch (e) { console.error("Data error"); }
-            render();
+                render(); // 資料抓到後再畫一次填入內容
+            } catch (e) { console.log("Fetch failed"); }
         }
 
         function render() {
@@ -95,6 +93,7 @@
             let d = new Date(anchor);
             let day = d.getDay();
             let mon = new Date(d.setDate(d.getDate() - day + (day === 0 ? -6 : 1)));
+            
             label.innerText = `${mon.getMonth()+1}/${mon.getDate()} — ${new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
 
             let html = "";
@@ -108,13 +107,38 @@
 
                 let cHtml = Object.entries(dayClasses).map(([p, n]) => {
                     const nt = notesData.find(x => x.d === dStr && x.p === p);
-                    const cd = countRemainingClasses(dStr, n);
-                    const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
                     return `
-                    <div class="py-5 border-b border-slate-100 last:border-0">
-                        <div class="flex justify-between items-center mb-3">
+                    <div class="py-4 border-b border-slate-100 last:border-0">
+                        <div class="flex justify-between items-center mb-2">
                             <div>
                                 <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
-                                <div class="text-lg font-black text-slate-800">${n}${cd}</div>
+                                <div class="text-lg font-black text-slate-800">${n}${countLeft(dStr, n)}</div>
                             </div>
-                            <a href="${url}" target="_blank" class="w-10 h-10 flex items-
+                            <a href="${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}" target="_blank" class="text-blue-500 text-xl">✎</a>
+                        </div>
+                        <div class="space-y-2">
+                            ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
+                            ${nt?.h ? `<div class="flex gap-2"><span class="badge tag-homework">作業</span><span class="content-text">${nt.h}</span></div>` : ''}
+                            ${nt?.e ? `<div class="flex gap-2"><span class="badge tag-exam">測驗</span><span class="content-text">${nt.e}</span></div>` : ''}
+                            ${nt?.r ? `<div class="flex gap-2"><span class="badge tag-remind">提醒</span><span class="content-text">${nt.r}</span></div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="card ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
+                        <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    ${ev ? `<div class="event-bar">🚩 ${ev}</div>` : ''}
+                    <div>${cHtml || '<p class="text-slate-300 text-xs">本日無課程</p>'}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); load(); }
+        window.onload = load;
+    </script>
+</body>
+</html>
