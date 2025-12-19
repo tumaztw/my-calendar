@@ -12,10 +12,12 @@
         .card { background: white; border-radius: 2rem; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
         .is-today { border: 3px solid #3b82f6; background-color: #f8fafc; }
         .badge { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; border: 1px solid; height: 24px; flex-shrink: 0; }
+        
         .tag-progress { background: #f0fdf4; color: #14532d; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #713f12; border-color: #fde68a; } 
         .tag-exam { background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }     
         .tag-remind { background: #f0f9ff; color: #0c4a6e; border-color: #bae6fd; }
+        
         .content-text { font-size: 0.95rem; color: #0f172a; line-height: 1.6; font-weight: 700; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
     </style>
@@ -28,4 +30,20 @@
             <div class="absolute -bottom-7 left-6 right-6 bg-white rounded-2xl shadow-xl p-2 flex items-center justify-between border border-slate-200">
                 <button onclick="changeWeek(-1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">«</button>
                 <div id="week-label" class="text-blue-900 font-black text-sm">載入中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue
+                <button onclick="changeWeek(1)" class="w-12 h-12 text-blue-800 font-bold text-xl active:scale-95 transition-transform">»</button>
+            </div>
+        </div>
+        <div id="main-list" class="mt-16 px-5"></div>
+    </div>
+
+    <script>
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
+
+        const schedule = {
+            1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
+            2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
+            3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
+            4: { 1: "109 國文", 3: "117 國文", 4: "116 國文", 6: "109 閱讀" },
+            5: { 2: "
