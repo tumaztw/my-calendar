@@ -10,7 +10,6 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; text-align: left; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); position: sticky; top: 0; z-index: 50; }
-        
         .item-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
         .badge { 
             display: inline-flex; align-items: center; justify-content: center; 
@@ -21,8 +20,6 @@
         .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .tag-remind { background: #f0f9ff; color: #075985; border-color: #bae6fd; }
-        
-        /* 視覺統一：標準字體，不使用斜體 */
         .content-text { font-size: 0.875rem; color: #475569; line-height: 1.5; font-style: normal !important; font-weight: 500; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
@@ -34,16 +31,16 @@
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">«</button>
-                <div id="week-label" class="text-blue-900 font-black text-base text-center">日期載入中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl">»</button>
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base text-center">正在同步日期...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
 
         <div id="main-list" class="mt-14 px-5 space-y-8 flex-1">
-            <div id="loading-state" class="text-center py-20">
+            <div class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
-                <p class="text-slate-400 font-bold">夫子正在校正資料...</p>
+                <p class="text-slate-400 font-bold">夫子正在研墨，請稍候...</p>
             </div>
         </div>
     </div>
@@ -51,14 +48,19 @@
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
+        
         const EXAM_DATE = "2026-01-15"; 
         const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
 
         const events = {
             "2025-12-19": "客語演說/朗讀比賽", 
-            "2025-12-22": "服裝儀容檢查", "2025-12-23": "三複習考 Day1", "2025-12-24": "三複習考/國文作業抽查", 
-            "2025-12-25": "行憲紀念日放假", "2026-01-01": "開國紀念日放假",
-            "2026-01-15": "第三次段考 Day1", "2026-01-16": "第三次段考 Day2"
+            "2025-12-22": "服裝儀容檢查", 
+            "2025-12-23": "三複習考 Day1", 
+            "2025-12-24": "三複習考/國文作業抽查", 
+            "2025-12-25": "行憲紀念日放假", 
+            "2026-01-01": "開國紀念日放假",
+            "2026-01-15": "第三次段考 Day1",
+            "2026-01-16": "第三次段考 Day2"
         };
 
         const schedule = {
@@ -72,50 +74,35 @@
         let notesData = [];
         let anchor = new Date();
 
-        function countRemainingClasses(currentDateStr, className) {
-            if (!className || className.includes("閱讀")) return ""; 
-            const cur = new Date(currentDateStr);
-            const target = new Date(EXAM_DATE);
-            if (cur >= target) return "";
-            let count = 0;
-            let tempDate = new Date(cur);
-            while (tempDate < target) {
-                let day = tempDate.getDay();
-                let dateStr = tempDate.toISOString().split('T')[0];
-                if (day >= 1 && day <= 5 && !HOLIDAYS.includes(dateStr)) { count++; }
-                tempDate.setDate(tempDate.getDate() + 1);
-            }
-            return `<span class="text-xs text-slate-400 font-normal ml-1">(段三倒數 ${count} 節)</span>`;
-        }
-
-        // 核心解析升級：強迫每一列必須產出 7 個欄位，缺席的補空字串
         function parseCSV(text) {
             const rows = [];
-            const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-            
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
             for (let line of lines) {
-                // 使用基礎分割並補足長度，避免位移
-                const rawCells = line.split(',');
-                const cells = Array.from({ length: 7 }, (v, i) => (rawCells[i] || "").replace(/^"|"$/g, '').trim());
-                rows.push(cells);
+                // 使用 Regex 精準處理雙引號內的內容，防止逗號干擾
+                const cells = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                if (cells.length >= 3) {
+                    rows.push({
+                        date: cells[1].replace(/\//g, '-'),
+                        period: String(cells[2]),
+                        progress: cells[3] || "",
+                        remind: cells[4] || "",
+                        homework: cells[5] || "",
+                        exam: cells[6] || ""
+                    });
+                }
             }
-            // 嚴格對位：[1]日期, [2]節次, [3]進度, [4]提醒, [5]作業, [6]測驗
-            return rows.slice(1).map(r => ({
-                d: r[1].replace(/\//g, '-'),
-                p: String(r[2]),
-                g: r[3], r: r[4], h: r[5], e: r[6]
-            }));
+            return rows.slice(1);
         }
 
         async function load() {
             try {
-                const res = await fetch(`${csvUrl}&cachebuster=${Date.now()}`);
+                const res = await fetch(`${csvUrl}&cb=${new Date().getTime()}`);
                 const text = await res.text();
                 notesData = parseCSV(text);
                 render();
             } catch (err) {
-                console.error("載入失敗:", err);
-                render(); // 失敗也嘗試渲染空白框架
+                console.error("載入失敗，2秒後重試");
+                setTimeout(load, 2000);
             }
         }
 
@@ -139,25 +126,23 @@
                 let ev = events[dStr];
 
                 let cHtml = Object.entries(todayClasses).map(([p, n]) => {
-                    const nt = notesData.find(x => x.d === dStr && x.p === p);
-                    const countdown = countRemainingClasses(dStr, n);
+                    const nt = notesData.find(x => x.date === dStr && x.period === p);
                     const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
                     return `
                     <div class="py-5 border-b border-slate-100 last:border-0">
                         <div class="flex justify-between items-center mb-4">
                             <div>
                                 <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
-                                <div class="text-lg font-black text-slate-800">${n}${countdown}</div>
+                                <div class="text-lg font-black text-slate-800">${n}</div>
                             </div>
                             <a href="${url}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl border border-blue-100 font-bold text-xl">✎</a>
                         </div>
-                        ${nt ? `
                         <div class="space-y-3">
-                            ${nt.g ? `<div class="item-row"><span class="badge tag-progress">進度</span><span class="content-text flex-1">${nt.g}</span></div>` : ''}
-                            ${nt.h ? `<div class="item-row"><span class="badge tag-homework">作業</span><span class="content-text flex-1">${nt.h}</span></div>` : ''}
-                            ${nt.e ? `<div class="item-row"><span class="badge tag-exam">測驗</span><span class="content-text flex-1">${nt.e}</span></div>` : ''}
-                            ${nt.r ? `<div class="item-row"><span class="badge tag-remind">提醒</span><span class="content-text flex-1">${nt.r}</span></div>` : ''}
-                        </div>` : ''}
+                            ${nt && nt.progress ? `<div class="item-row"><span class="badge tag-progress">進度</span><span class="content-text flex-1">${nt.progress}</span></div>` : ''}
+                            ${nt && nt.homework ? `<div class="item-row"><span class="badge tag-homework">作業</span><span class="content-text flex-1">${nt.homework}</span></div>` : ''}
+                            ${nt && nt.exam ? `<div class="item-row"><span class="badge tag-exam">測驗</span><span class="content-text flex-1">${nt.exam}</span></div>` : ''}
+                            ${nt && nt.remind ? `<div class="item-row"><span class="badge tag-remind">提醒</span><span class="content-text flex-1">${nt.remind}</span></div>` : ''}
+                        </div>
                     </div>`;
                 }).join('');
 
@@ -165,4 +150,20 @@
                 <div class="bg-white rounded-[2.5rem] p-7 shadow-xl border border-white/50 ${isToday ? 'is-today' : ''}">
                     <div class="flex items-center gap-4 mb-4">
                         <span class="text-4xl font-black ${isToday ? 'text-blue-600' : 'text-slate-200'} font-mono">${cur.getDate()}</span>
-                        <span class="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">${["週日
+                        <span class="text-xs font-black text-slate-400 bg-slate-100 px-3 py-1 rounded-lg">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    ${ev ? `<div class="event-bar">🚩 ${ev}</div>` : ''}
+                    <div>${cHtml || '<p class="text-slate-200 text-xs py-2 text-center">本日無課程</p>'}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { 
+            anchor.setDate(anchor.getDate()+(n*7)); 
+            load(); 
+        }
+        window.onload = load;
+    </script>
+</body>
+</html>
