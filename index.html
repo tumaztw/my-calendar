@@ -6,37 +6,38 @@
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; background-color: #f8fafc; margin: 0; }
-        .header { background: #1e3a8a; color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 30px 30px; }
-        .card { background: white; margin: 20px 15px; border-radius: 20px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .is-today { border: 2px solid #3b82f6; background-color: #f0f9ff; }
-        .badge { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-right: 5px; color: white; font-weight: bold; }
-        .tag-p { background: #16a34a; } /* 進度-綠 */
-        .tag-h { background: #d97706; } /* 作業-橘 */
-        .tag-e { background: #dc2626; } /* 測驗-紅 */
-        .item { margin-top: 10px; font-size: 14px; line-height: 1.5; color: #334155; }
+        body { font-family: sans-serif; background-color: #f8fafc; margin: 0; padding-bottom: 30px; }
+        .header { background: #1e3a8a; color: white; padding: 40px 20px; text-align: center; border-radius: 0 0 30px 30px; position: relative; }
+        .nav-bar { position: absolute; bottom: -25px; left: 20px; right: 20px; background: white; padding: 12px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #1e3a8a; border: 1px solid #eee; }
+        .card { background: white; margin: 45px 15px 20px; border-radius: 20px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .is-today { border: 2.5px solid #3b82f6; background-color: #f0f9ff; }
+        .badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 4px; margin-right: 6px; color: white; }
+        .tag-p { background: #16a34a; } /* 進度 */
+        .tag-h { background: #d97706; } /* 作業 */
+        .tag-e { background: #dc2626; } /* 測驗 */
+        .content-item { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #334155; }
+        .remind-box { background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 13px; border-left: 4px solid #cbd5e1; color: #475569; }
     </style>
 </head>
 <body>
     <div class="max-w-md mx-auto">
         <div class="header">
-            <h1 class="text-xl font-bold">國文教學看板</h1>
-            <p class="text-xs opacity-70">福山國中 • 張允蒼老師</p>
-            <div class="flex justify-between items-center mt-5 bg-white text-blue-900 p-2 rounded-xl">
-                <button onclick="changeWeek(-1)" class="px-4 font-bold">«</button>
-                <span id="week-label" class="text-sm font-bold">讀取中...</span>
-                <button onclick="changeWeek(1)" class="px-4 font-bold">»</button>
+            <h1 class="text-2xl font-bold italic">國文教學看板</h1>
+            <p class="text-[10px] opacity-60 tracking-widest mt-1">福山國中 • 張允蒼老師</p>
+            <div class="nav-bar">
+                <button onclick="changeWeek(-1)" class="w-10 h-10 font-bold text-xl">«</button>
+                <div id="week-label" class="font-bold text-sm">正在載入週次...</div>
+                <button onclick="changeWeek(1)" class="w-10 h-10 font-bold text-xl">»</button>
             </div>
         </div>
-
-        <div id="main-list">
-            </div>
+        <div id="main-list"></div>
     </div>
 
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
+        const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
         
-        const schedule = {
+        const baseSchedule = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
             3: { 2: "109 國文", 3: "116 國文", 7: "117 國文" },
@@ -44,35 +45,39 @@
             5: { 2: "116 國文", 5: "117 國文", 7: "109 國文" }
         };
 
-        let notes = [];
+        let notesData = [];
         let anchor = new Date();
 
-        // 🚀 最原始的解析：不管有沒有引號，直接一行一行拆
-        function parse(text) {
-            const rows = text.split("\n");
-            return rows.slice(1).map(row => {
-                const c = row.split(",");
-                return {
-                    d: (c[1] || "").trim().replace(/\//g, '-'),
-                    p: (c[2] || "").trim(),
-                    g: (c[3] || "").trim(), // 進度
-                    r: (c[4] || "").trim(), // 提醒
-                    h: (c[5] || "").trim(), // 作業
-                    e: (c[6] || "").trim()  // 測驗
-                };
+        // 強大解析器：處理被雙引號包裹的 CSV 內容
+        function parseCSV(text) {
+            const rows = [];
+            const lines = text.split(/\r?\n/);
+            lines.forEach(line => {
+                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (matches) {
+                    rows.push(matches.map(val => val.replace(/^"|"$/g, '').trim()));
+                }
             });
+            return rows.slice(1).map(r => ({
+                date: (r[1]||"").replace(/\//g, '-'),
+                period: r[2]||"",
+                progress: r[3]||"",
+                remind: r[4]||"",
+                homework: r[5]||"",
+                exam: r[6]||""
+            }));
         }
 
-        async function load() {
+        async function init() {
             try {
-                const res = await fetch(csvUrl + "&t=" + Date.now());
+                const res = await fetch(`${csvUrl}&t=${Date.now()}`);
                 const text = await res.text();
-                notes = parse(text);
-            } catch (err) {}
-            draw();
+                notesData = parseCSV(text);
+            } catch (e) { console.error("CSV Load Error"); }
+            render();
         }
 
-        function draw() {
+        function render() {
             const list = document.getElementById('main-list');
             const label = document.getElementById('week-label');
             let d = new Date(anchor);
@@ -80,34 +85,30 @@
             let diff = d.getDate() - day + (day === 0 ? -6 : 1);
             let mon = new Date(d.setDate(diff));
 
-            label.innerText = (mon.getMonth()+1) + "/" + mon.getDate() + " — " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString();
+            label.innerText = (mon.getMonth()+1) + "/" + mon.getDate() + " — " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW', {month:'numeric', day:'numeric'});
 
             let html = "";
             for (let i = 0; i < 7; i++) {
                 let cur = new Date(mon);
                 cur.setDate(mon.getDate() + i);
-                let dStr = cur.getFullYear() + "-" + String(cur.getMonth()+1).padStart(2,'0') + "-" + String(cur.getDate()).padStart(2,'0');
+                let dStr = cur.toISOString().split('T')[0];
                 let isToday = new Date().toDateString() === cur.toDateString();
                 let wd = cur.getDay();
-                let classes = schedule[wd] || {};
+                let classes = baseSchedule[wd] || {};
 
-                let cHtml = "";
-                for (let p in classes) {
-                    const nt = notes.find(x => x.d === dStr && x.p === p);
-                    cHtml += `
-                    <div style="padding:15px 0; border-bottom:1px solid #eee;">
-                        <div style="font-weight:bold; color:#1e3a8a;">第 ${p} 節 ${classes[p]}</div>
+                let cHtml = Object.entries(classes).map(([p, n]) => {
+                    const nt = notesData.find(x => x.date === dStr && String(x.period) === String(p));
+                    const editUrl = `${formUrl}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
+                    return `
+                    <div style="padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 10px; color: #3b82f6; font-weight: bold;">第 ${p} 節</span>
+                                <div style="font-weight: 900; font-size: 18px; color: #1e293b;">${n}</div>
+                            </div>
+                            <a href="${editUrl}" target="_blank" style="background:#f1f5f9; color:#3b82f6; width:35px; height:35px; border-radius:10px; display:flex; align-items:center; justify-content:center; text-decoration:none;">✎</a>
+                        </div>
                         ${nt ? `
-                            <div class="item">${nt.g ? `<span class="badge tag-p">進度</span>${nt.g}` : ''}</div>
-                            <div class="item">${nt.h ? `<span class="badge tag-h">作業</span>${nt.h}` : ''}</div>
-                            <div class="item">${nt.e ? `<span class="badge tag-e">測驗</span>${nt.e}` : ''}</div>
-                            ${nt.r ? `<div style="margin-top:5px; color:#64748b; font-size:12px;">註：${nt.r}</div>` : ''}
-                        ` : ''}
-                    </div>`;
-                }
-
-                html += `
-                <div class="card ${isToday ? 'is-today' : ''}">
-                    <div style="font-weight:bold; margin-bottom:10px;">
-                        <span style="font-size:24px;">${cur.getDate()}</span> 
-                        <span style="font-size:14px; color:#64748b;">${["週日","週一","週二","週三","週四","週五","週
+                            ${nt.progress ? `<div class="content-item"><span class="badge tag-p">進度</span>${nt.progress}</div>` : ''}
+                            ${nt.homework ? `<div class="content-item"><span class="badge tag-h">作業</span>${nt.homework}</div>` : ''}
+                            ${nt.exam ? `<div class="content
