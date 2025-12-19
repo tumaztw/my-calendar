@@ -6,12 +6,12 @@
     <title>張老師國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #f1f5f9; margin: 0; font-family: sans-serif; }
-        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 20px 55px; text-align: center; color: white; border-radius: 0 0 2.5rem 2.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .nav-container { background: white; margin: -35px 15px 15px; padding: 12px; border-radius: 1.2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.8); }
-        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; transition: transform 0.2s; }
-        .is-today { border: 3px solid #3b82f6; background: #f0f7ff; }
-        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; margin-right: 6px; color: white; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        body { background: #f1f5f9; margin: 0; font-family: sans-serif; scroll-behavior: smooth; }
+        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 20px 55px; text-align: center; color: white; border-radius: 0 0 2.5rem 2.5rem; }
+        .nav-container { background: white; margin: -35px 15px 15px; padding: 12px; border-radius: 1.2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 50; }
+        .day-card { background: white; border-radius: 1.2rem; padding: 1.2rem; margin: 15px; border: 1px solid #e2e8f0; transition: all 0.3s; }
+        .is-today { border: 3px solid #3b82f6; background: #f0f7ff; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
+        .badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; margin-right: 6px; color: white; font-weight: bold; display: inline-block; }
     </style>
 </head>
 <body>
@@ -45,7 +45,6 @@
         let db = [];
         let anchorDate = new Date();
 
-        // 核心解析器：處理 CSV 內部的雙引號與逗號問題
         function parseCSV(text) {
             const rows = [];
             let row = [];
@@ -68,4 +67,35 @@
             const label = document.getElementById('weekLabel');
             let d = new Date(anchorDate);
             let day = d.getDay();
-            let mon = new Date(d.setDate(d.getDate() - (day === 0 ? 6 : day -
+            let mon = new Date(d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)));
+            
+            label.innerText = (mon.getMonth()+1)+"/"+mon.getDate() + " - " + new Date(new Date(mon).setDate(mon.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'});
+
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                let curr = new Date(mon); curr.setDate(mon.getDate() + i);
+                let ds_match = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}`;
+                let wd = curr.getDay();
+                let isToday = new Date().toDateString() === curr.toDateString();
+                
+                let classRows = Object.entries(TIMETABLE[wd] || {}).map(([p, name]) => {
+                    const rowData = db.find(x => x.date === ds_match && x.p === String(p));
+                    return `
+                    <div class="py-4 border-b border-slate-50 last:border-0">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-1 rounded">第 ${p} 節 ${name}</span>
+                            <a href="${FORM_BASE}?usp=pp_url&entry.1279670059=${ds_match}&entry.1620291828=${p}" target="_blank" class="text-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                            </a>
+                        </div>
+                        <div class="mt-2 space-y-2">
+                            ${rowData?.g ? `<div><span class="badge bg-emerald-500">進度</span><span class="text-sm font-bold text-slate-700">${rowData.g}</span></div>` : ''}
+                            ${rowData?.h ? `<div><span class="badge bg-orange-400">作業</span><span class="text-sm font-bold text-slate-700">${rowData.h}</span></div>` : ''}
+                            ${rowData?.e ? `<div><span class="badge bg-rose-500">測驗</span><span class="text-sm font-bold text-slate-700">${rowData.e}</span></div>` : ''}
+                            ${rowData?.r ? `<div><span class="badge bg-sky-500">提醒</span><span class="text-sm font-bold text-slate-700">${rowData.r}</span></div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `<div id="${isToday ? 'today-marker' : ''}" class="day-card ${isToday ? 'is-today shadow-lg' : ''}">
+                    <div class="font-black text-slate-800 text-xl flex items-baseline gap
