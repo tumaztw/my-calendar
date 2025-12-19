@@ -16,8 +16,8 @@
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         .is-today { background-color: #f1f5f9 !important; border: 2.5px solid #3b82f6 !important; }
         .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 10px; border-radius: 8px; margin-top: 8px; }
-        /* 極簡行事曆標籤 */
         .event-bar { background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: inline-block; }
+        .countdown-text { font-size: 0.75rem; color: #64748b; font-weight: normal; margin-left: 4px; }
     </style>
 </head>
 <body class="pb-12 text-left">
@@ -41,7 +41,10 @@
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv";
         const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform";
         
-        // 核心行事曆事項 
+        // 考試與放假設定 
+        const EXAM_DATE = "2026-01-15"; 
+        const HOLIDAYS = ["2025-12-25", "2026-01-01"]; 
+
         const events = {
             "2025-12-19": "客語演說/朗讀比賽",
             "2025-12-22": "服裝儀容檢查",
@@ -64,7 +67,27 @@
         let notesData = [];
         let anchor = new Date();
 
-        // 穩定版解析邏輯 
+        function countRemainingClasses(currentDateStr, className) {
+            if (className.includes("閱讀")) return ""; 
+            const cur = new Date(currentDateStr);
+            const target = new Date(EXAM_DATE);
+            if (cur >= target) return "";
+
+            let count = 0;
+            let tempDate = new Date(cur);
+            // 從當天開始計算到段考前一天
+            while (tempDate < target) {
+                let day = tempDate.getDay();
+                let dateStr = tempDate.toISOString().split('T')[0];
+                // 週一至週五上課，且非國定假日
+                if (day >= 1 && day <= 5 && !HOLIDAYS.includes(dateStr)) {
+                    count++;
+                }
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+            return `<span class="countdown-text">(段三倒數 ${count} 節)</span>`;
+        }
+
         function parseCSV(text) {
             const rows = [];
             const lines = text.split(/\r?\n/);
@@ -85,10 +108,7 @@
                 const text = await res.text();
                 notesData = parseCSV(text);
                 render();
-            } catch (err) { 
-                console.error(err);
-                render(); // 失敗也要渲染課表框架
-            }
+            } catch (err) { render(); }
         }
 
         function render() {
@@ -112,11 +132,15 @@
 
                 let cHtml = Object.entries(todayClasses).map(([p, n]) => {
                     const nt = notesData.find(x => x.d === dStr && x.p === p);
+                    const countdown = countRemainingClasses(dStr, n);
                     const url = `${formBase}?usp=pp_url&entry.1279670059=${dStr}&entry.1620291828=${p}`;
                     return `
                     <div class="py-5 border-b border-slate-100 last:border-0">
                         <div class="flex justify-between items-center mb-3">
-                            <div><span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span><div class="text-lg font-black text-slate-800">${n}</div></div>
+                            <div>
+                                <span class="text-[10px] font-black text-blue-500 block">第 ${p} 節</span>
+                                <div class="text-lg font-black text-slate-800">${n}${countdown}</div>
+                            </div>
                             <a href="${url}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 rounded-xl">✎</a>
                         </div>
                         ${nt ? `
