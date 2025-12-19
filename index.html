@@ -97,4 +97,26 @@
                         </div>
                         <div class="space-y-2">
                             ${nt?.g ? `<div class="flex gap-2"><span class="badge tag-progress">進度</span><span class="content-text">${nt.g}</span></div>` : ''}
-                            ${nt?.
+                            ${nt?.h ? `<div class="flex gap-2"><span class="badge tag-homework">作業</span><span class="content-text">${nt.h}</span></div>` : ''}
+                            ${nt?.e ? `<div class="flex gap-2"><span class="badge tag-exam">測驗</span><span class="content-text">${nt.e}</span></div>` : ''}
+                            ${nt?.r ? `<div class="flex gap-2"><span class="badge tag-remind">提醒</span><span class="content-text">${nt.r}</span></div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                html += `<div class="card ${isToday ? 'is-today' : ''}">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl font-black ${isToday ? 'text-blue-600' : 'text-slate-300'}">${cur.getDate()}</span>
+                        <span class="text-xs font-bold text-slate-400">${["週日","週一","週二","週三","週四","週五","週六"][wd]}</span>
+                    </div>
+                    <div>${cHtml || `<p class="text-slate-300 text-xs py-2">本日無課程</p>`}</div>
+                </div>`;
+            }
+            list.innerHTML = html;
+        }
+
+        function changeWeek(n) { anchor.setDate(anchor.getDate()+(n*7)); load(); }
+        window.onload = load;
+    </script>
+</body>
+</html>
