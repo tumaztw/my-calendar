@@ -3,53 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福山國中 114-1 智慧行事曆</title>
+    <title>福山國中 114-1 智慧看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 p-4">
-    <div class="max-w-md mx-auto bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
-        <div class="bg-blue-600 p-6 text-white">
+<body class="bg-gray-50 min-h-screen pb-10">
+    <div class="max-w-md mx-auto bg-white shadow-xl min-h-screen border-x border-gray-100">
+        <div class="bg-blue-600 p-6 text-white sticky top-0 z-10">
             <h1 class="text-2xl font-bold">福山國中行事曆</h1>
-            <p class="opacity-80 text-sm">楠梓土庫 ⇄ 左營重信路</p>
-            <div id="alert" class="mt-4 bg-white/20 p-3 rounded-lg text-sm hidden">
-                ⚠️ **今日提醒：** 學校有大型活動，重信路可能擁擠，建議提早出門。
+            <p class="opacity-80 text-sm">左營區重信路 215 號 ⇄ 楠梓土庫</p>
+            <div id="alert" class="mt-4 bg-yellow-400 p-3 rounded-xl text-blue-900 text-sm font-bold shadow-lg hidden">
+                ⚠️ 今日警示：學校有重要活動，建議提早 15 分鐘出門避開人潮。
             </div>
         </div>
 
-        <div class="p-4 space-y-4" id="list">
+        <div class="flex gap-2 p-4 overflow-x-auto border-b border-gray-100 bg-white">
+            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs shrink-0 font-bold">● 考試</span>
+            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs shrink-0 font-bold">● 作業抽查</span>
+            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs shrink-0 font-bold">● 放假/補假</span>
+        </div>
+
+        <div class="divide-y divide-gray-50" id="list">
             </div>
     </div>
 
     <script>
-        [cite_start]// 從 PDF 提取的重點日期 [cite: 1, 3, 5, 6, 7, 8]
         const data = [
-            [cite_start]{ d: "2025-09-01", t: "開學", n: "正式上課 [cite: 1]" },
-            [cite_start]{ d: "2025-10-15", t: "第一次段考", n: "Day 1 [cite: 3]", alert: true },
-            [cite_start]{ d: "2025-10-16", t: "第一次段考", n: "Day 2 [cite: 3]", alert: true },
-            [cite_start]{ d: "2025-11-25", t: "第二次段考", n: "Day 1 [cite: 5]", alert: true },
-            [cite_start]{ d: "2025-11-26", t: "第二次段考", n: "Day 2 [cite: 5]", alert: true },
-            [cite_start]{ d: "2025-12-12", t: "校慶運動會", n: "交通繁忙 [cite: 6]", alert: true },
-            [cite_start]{ d: "2025-12-13", t: "校慶運動會", n: "交通繁忙 [cite: 6]", alert: true },
-            [cite_start]{ d: "2025-12-15", t: "校慶補假", n: "重信路較順暢 [cite: 6]" },
-            [cite_start]{ d: "2026-01-15", t: "第三次段考", n: "Day 1 [cite: 7]", alert: true },
-            [cite_start]{ d: "2026-01-16", t: "第三次段考", n: "Day 2 [cite: 7]", alert: true },
-            [cite_start]{ d: "2026-01-23", t: "休業式", n: "寒假開始 [cite: 8]" }
+            // 9月
+            { d: "2025-09-01", t: "開學典禮", c: "green", n: "正式上課 [cite: 1]" },
+            // 10月
+            { d: "2025-10-01", t: "作業抽查", c: "blue", n: "英語、數學、自然 [cite: 3]" },
+            { d: "2025-10-06", t: "中秋節放假", c: "green", n: "全校放假一天 [cite: 3]" },
+            { d: "2025-10-10", t: "國慶日放假", c: "green", n: "全校放假一天 [cite: 3]" },
+            { d: "2025-10-15", t: "第一次段考", c: "red", n: "Day 1 [cite: 3]", alert: true },
+            { d: "2025-10-16", t: "第一次段考", c: "red", n: "Day 2 [cite: 3]", alert: true },
+            { d: "2025-10-24", t: "光復節補假", c: "green", n: "全校放假一天 [cite: 4]" },
+            { d: "2025-10-27", t: "作業抽查", c: "blue", n: "學生生涯檔案 (二三年級) [cite: 4]" },
+            // 11月
+            { d: "2025-11-05", t: "作業抽查", c: "blue", n: "社會科 (歷、地、公) [cite: 4]" },
+            { d: "2025-11-20", t: "作業抽查", c: "blue", n: "學生生涯檔案檢核 [cite: 5]" },
+            { d: "2025-11-25", t: "第二次段考", c: "red", n: "Day 1 [cite: 5]", alert: true },
+            { d: "2025-11-26", t: "第二次段考", c: "red", n: "Day 2 [cite: 5]", alert: true },
+            // 12月
+            { d: "2025-12-12", t: "校慶運動會", c: "red", n: "全校活動 (交通繁忙) ", alert: true },
+            { d: "2025-12-13", t: "校慶運動會", c: "red", n: "全校活動 ", alert: true },
+            { d: "2025-12-15", t: "校慶補假", c: "green", n: "今日不上課 " },
+            { d: "2025-12-24", t: "作業抽查", c: "blue", n: "國文科 (習作及作文) " },
+            { d: "2025-12-25", t: "行憲紀念日", c: "green", n: "放假一天 " },
+            { d: "2025-12-30", t: "作業抽查", c: "blue", n: "繳回班會紀錄簿 " },
+            // 1月
+            { d: "2026-01-01", t: "開國紀念日", c: "green", n: "元旦放假 " },
+            { d: "2026-01-15", t: "第三次段考", c: "red", n: "Day 1 ", alert: true },
+            { d: "2026-01-16", t: "第三次段考", c: "red", n: "Day 2 ", alert: true },
+            { d: "2026-01-23", t: "休業典禮", c: "green", n: "15:30 放學，寒假開始 [cite: 8]" }
         ];
 
         const list = document.getElementById('list');
         const alertBox = document.getElementById('alert');
+        // 取得今日日期 (格式: YYYY-MM-DD)
         const today = new Date().toISOString().split('T')[0];
 
         data.forEach(item => {
+            // 如果今天是警示日，顯示提醒
             if (item.d === today && item.alert) alertBox.classList.remove('hidden');
             
+            const colorClass = {
+                red: "bg-red-500",
+                blue: "bg-blue-500",
+                green: "bg-green-500"
+            }[item.c];
+
             list.innerHTML += `
-                <div class="flex items-center border-b pb-3 border-gray-100 last:border-0">
-                    <div class="w-24 text-sm font-mono text-gray-400 font-bold">${item.d.slice(5)}</div>
-                    <div class="flex-1">
-                        <div class="text-gray-800 font-medium">${item.t}</div>
-                        <div class="text-xs text-gray-400">${item.n}</div>
+                <div class="p-4 flex items-center hover:bg-gray-50 transition-colors">
+                    <div class="w-16 shrink-0 text-center border-r border-gray-100 mr-4">
+                        <div class="text-xs text-gray-400 font-mono">${item.d.split('-')[1]}月</div>
+                        <div class="text-lg font-bold text-gray-700 font-mono">${item.d.split('-')[2]}</div>
                     </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${colorClass}"></span>
+                            <span class="font-bold text-gray-800">${item.t}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-0.5">${item.n}</div>
+                    </div>
+                    ${item.alert ? '⚠️' : ''}
                 </div>
             `;
         });
