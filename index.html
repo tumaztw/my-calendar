@@ -10,20 +10,27 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
-        /* 類別標籤顏色 */
-        .tag-進度 { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        .tag-考試 { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-        .tag-作業 { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
-        .card-enter { animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .badge { @apply text-[9px] px-1.5 py-0.5 rounded border font-bold mr-2 shrink-0; }
+        .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .remind-box { background: #f1f5f9; border-left: 3px solid #94a3b8; padding: 8px; border-radius: 6px; }
     </style>
 </head>
-<body class="pb-12">
+<body class="pb-12 text-left">
     <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
         <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
             <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
             <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
             
             <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 hover:bg-blue-50 rounded-xl transition-all font-bold text-xl">«</button>
-                <div id="week-label" class="text-blue
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic">同步雲端中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
+            </div>
+        </div>
+
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
+
+        <div class="p-8 text-center bg-slate-50 border-t border-slate-100">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.
