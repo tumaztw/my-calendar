@@ -7,41 +7,47 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* 讓捲動更平滑 */
         html { scroll-behavior: smooth; }
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; margin: 0; }
         .serif { font-family: 'Noto Serif TC', serif; }
         
-        /* ✅ 固定頂部導航列 */
+        /* 固定頂部導航 */
         .sticky-header { 
-            position: sticky; 
-            top: 0; 
-            z-index: 50; 
+            position: sticky; top: 0; z-index: 50; 
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
         }
-
+        
         .badge { 
             display: inline-flex; align-items: center; justify-content: center;
             font-size: 13px; font-weight: 900; padding: 4px 8px; border-radius: 6px;
-            margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px; vertical-align: middle;
+            margin-right: 10px; border: 1px solid; min-width: 50px; height: 26px;
         }
         .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
         .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
         .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
         
-        .content-text { font-size: 15px; line-height: 1.6; color: #334155; display: flex; align-items: center; margin-bottom: 8px; }
-        .remind-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-top: 10px; }
-
-        /* ✅ 今日標記與定位間距 */
+        /* 今日方框樣式 */
         .is-today { 
             background-color: #f1f5f9 !important; 
-            border: 2px solid #3b82f6 !important; 
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
-            /* 讓自動捲動停止時，上方留一點空間，不要被 Header 擋住 */
+            border: 2.5px solid #3b82f6 !important; 
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
             scroll-margin-top: 150px; 
         }
 
-        /* 懸浮回今日按鈕 */
         .btn-today {
             position: fixed; bottom: 20px; right: 20px; z-index: 100;
-            background: #1e3a8a;
+            background: #1e3a8a; color: white; width: 50px; height: 50px;
+            border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center; font-weight: 900;
+        }
+    </style>
+</head>
+<body class="pb-12 text-left">
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white relative">
+        
+        <div class="sticky-header pt-10 pb-16 px-8 text-white rounded-b-[3rem] shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text
