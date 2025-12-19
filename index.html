@@ -5,60 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師 國文教學看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --today-bg: #f1f5f9; } /* 淺灰色塊 */
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #eef2ff; background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px); background-size: 20px 20px; }
-        .cartoon-font { font-family: 'ZCOOL KuaiLe', cursive; }
-        .main-header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); border-bottom: 6px solid #4f46e5; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .main-header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
         
-        /* 標籤樣式 */
+        /* 💡 這裡加強了標籤的視覺比例 */
         .badge { 
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900; padding: 4px 12px; border-radius: 999px;
-            margin-right: 8px; border: 3px solid #000; box-shadow: 2px 2px 0px #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; /* 加大標題字體 */
+            font-weight: 900;
+            padding: 4px 10px; 
+            border-radius: 6px;
+            margin-right: 12px;
+            border: 1.5px solid; /* 線條加粗 */
+            min-width: 55px;
+            height: 28px;
+            vertical-align: middle;
         }
-        .tag-progress { background: #bbf7d0; color: #166534; }
-        .tag-homework { background: #fef08a; color: #854d0e; }
-        .tag-exam { background: #fecaca; color: #991b1b; }
-
-        /* 卡通外框 */
-        .card-cartoon { 
-            border: 3px solid #000; box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+        .tag-progress { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .tag-homework { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+        .tag-exam { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        
+        /* 💡 讓輸入的文字與標籤完美切齊 */
+        .content-text {
+            font-size: 16px; /* 內文字體加大 */
+            line-height: 28px; /* 與標籤高度一致 */
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
         }
-        .is-today { background-color: var(--today-bg) !important; border-color: #6366f1; border-width: 4px; }
-        .is-not-today { background-color: #ffffff; }
-
-        /* 圖示旋轉動畫 */
-        .icon-float { animation: floating 3s ease-in-out infinite; }
-        @keyframes floating { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        .remind-box { background: #f8fafc; border-left: 5px solid #cbd5e1; padding: 12px 15px; border-radius: 10px; margin-top: 12px; }
     </style>
 </head>
 <body class="pb-12 text-left">
-    <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white/50 backdrop-blur-sm shadow-2xl">
-        <div class="main-header pt-12 pb-24 px-8 text-white rounded-b-[4rem] relative text-left">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-black cartoon-font tracking-wider">國文教學看板</h1>
-                    <p class="text-xs opacity-90 mt-2 font-bold bg-black/20 px-3 py-1 rounded-full inline-block">福山國中 • 張允蒼老師 🌸</p>
-                </div>
-                <div class="text-5xl icon-float">🦉</div>
-            </div>
-            
-            <div class="absolute -bottom-8 left-6 right-6 bg-white border-4 border-black rounded-3xl shadow-[8px_8px_0px_rgba(0,0,0,1)] p-3 flex items-center justify-between">
-                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center bg-indigo-100 border-2 border-black rounded-2xl text-2xl active:translate-y-1 transition-all">👈</button>
-                <div id="week-label" class="text-indigo-900 font-black text-lg cartoon-font">讀取中...</div>
-                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center bg-indigo-100 border-2 border-black rounded-2xl text-2xl active:translate-y-1 transition-all">👉</button>
+    <div class="max-w-md mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+        <div class="main-header pt-12 pb-20 px-8 text-white rounded-b-[3rem] relative shadow-lg">
+            <h1 class="text-3xl font-bold serif tracking-tight">國文教學看板</h1>
+            <p class="text-[10px] opacity-80 mt-1 font-bold tracking-[0.2em]">福山國中 • 張允蒼老師</p>
+            <div class="absolute -bottom-7 left-6 right-6 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-2 flex items-center justify-between border border-white">
+                <button onclick="changeWeek(-1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">«</button>
+                <div id="week-label" class="text-blue-900 font-black text-base italic text-center">同步中...</div>
+                <button onclick="changeWeek(1)" class="w-12 h-12 flex items-center justify-center text-blue-800 font-bold text-xl hover:bg-blue-50 rounded-xl transition-all">»</button>
             </div>
         </div>
 
-        <div id="main-list" class="mt-16 px-6 space-y-10 flex-1"></div>
+        <div id="main-list" class="mt-14 px-5 space-y-8 flex-1"></div>
 
-        <div class="p-10 text-center">
-            <div class="text-4xl mb-2">🏫</div>
-            <p class="text-[10px] text-slate-400 font-black tracking-[0.3em] uppercase">教學日誌系統穩定運行中</p>
-            <p class="text-[9px] text-slate-300 mt-1 italic">📍 楠梓土庫 ⇄ 左營重信路</p>
+        <div class="p-8 text-center bg-slate-50 border-t border-slate-100 mt-10">
+            <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] mb-1 uppercase">自動教學日誌系統</p>
+            <p class="text-[9px] text-slate-300 italic">福山國中 • 國文科</p>
         </div>
     </div>
 
@@ -69,9 +69,6 @@
         const ID_DATE = "entry.1279670059";
         const ID_PERIOD = "entry.1620291828";
 
-        // 每週輪換的小圖示
-        const weeklyIcons = ["🐱", "🐰", "🦊", "🐻", "🐼", "🐸"];
-        
         const baseSchedule = {
             1: { 1: "109 國文", 2: "117 國文", 4: "116 國文" },
             2: { 2: "116 國文", 3: "109 國文", 5: "117 國文", 7: "116 閱讀" },
@@ -85,7 +82,8 @@
 
         async function fetchNotes() {
             try {
-                const res = await fetch(csvUrl + "&t=" + Date.now());
+                // 強制加上隨機數，確保抓到最新資料
+                const res = await fetch(csvUrl + "&update=" + Date.now());
                 const text = await res.text();
                 const rows = text.split('\n').filter(r => r.trim()).slice(1);
                 notesData = rows.map(r => {
@@ -99,7 +97,7 @@
                         exam: (c[6]||"").replace(/"/g, '').trim()
                     };
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("讀取失敗"); }
             render();
         }
 
@@ -111,10 +109,7 @@
             let diff = d.getDate() - day + (day === 0 ? -6 : 1);
             let monday = new Date(d.setDate(diff));
 
-            const weekNum = Math.floor(monday.getDate() / 7) % weeklyIcons.length;
-            const weekIcon = weeklyIcons[weekNum];
-
-            label.innerText = `${weekIcon} ${monday.getMonth()+1}/${monday.getDate()} — ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
+            label.innerText = `${monday.getMonth()+1}/${monday.getDate()} — ${new Date(new Date(monday).setDate(monday.getDate()+6)).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}`;
 
             let fullHtml = "";
             for (let i = 0; i < 7; i++) {
@@ -129,37 +124,31 @@
                     const note = notesData.find(note => note.date === dStr && String(note.period) === String(p));
                     const smartUrl = `${formBase}?usp=pp_url&${ID_DATE}=${dStr}&${ID_PERIOD}=${p}`;
                     return `
-                    <div class="py-6 border-b-2 border-dashed border-slate-200 last:border-0">
-                        <div class="flex justify-between items-start mb-4">
+                    <div class="py-6 border-b border-slate-100 last:border-0">
+                        <div class="flex justify-between items-center mb-4">
                             <div>
-                                <span class="text-[11px] font-black text-indigo-400 uppercase tracking-widest block mb-1">第 ${p} 節</span>
-                                <div class="text-2xl font-black text-slate-800 cartoon-font">${n}</div>
+                                <span class="text-[11px] font-black text-blue-500 uppercase block tracking-widest mb-1">節次 ${p}</span>
+                                <div class="text-2xl font-black text-slate-800 leading-tight">${n}</div>
                             </div>
-                            <a href="${smartUrl}" target="_blank" class="w-12 h-12 flex items-center justify-center bg-yellow-400 border-2 border-black rounded-2xl shadow-[4px_4px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all text-xl">📝</a>
+                            <a href="${smartUrl}" target="_blank" class="w-12 h-12 flex items-center justify-center bg-blue-50 text-blue-600 rounded-2xl shadow-sm hover:bg-blue-100 transition-colors">✎</a>
                         </div>
                         ${note ? `
-                        <div class="space-y-4 mt-4">
-                            ${note.progress ? `<div class="flex items-center text-lg font-bold text-slate-700"><span class="badge tag-progress">進度</span>${note.progress}</div>` : ''}
-                            ${note.homework ? `<div class="flex items-center text-lg font-bold text-slate-700"><span class="badge tag-homework">作業</span><span class="mr-2">🎒</span>${note.homework}</div>` : ''}
-                            ${note.exam ? `<div class="flex items-center text-lg font-bold text-slate-700"><span class="badge tag-exam">考試</span><span class="mr-2">🧑‍🏫</span>${note.exam}</div>` : ''}
-                            ${note.remind ? `<div class="bg-indigo-50 border-2 border-indigo-200 p-4 rounded-2xl relative mt-4">
-                                <span class="absolute -top-3 -right-2 text-2xl">📢</span>
-                                <span class="text-sm font-bold text-indigo-600 leading-relaxed">${note.remind}</span>
-                            </div>` : ''}
+                        <div class="space-y-4">
+                            ${note.progress ? `<div class="content-text"><span class="badge tag-progress">進度</span><span>${note.progress}</span></div>` : ''}
+                            ${note.homework ? `<div class="content-text"><span class="badge tag-homework">作業</span><span>${note.homework}</span></div>` : ''}
+                            ${note.exam ? `<div class="content-text"><span class="badge tag-exam">考試</span><span>${note.exam}</span></div>` : ''}
+                            ${note.remind ? `<div class="remind-box"><span class="text-[11px] font-black text-slate-400 block mb-1 tracking-[0.2em] uppercase">課堂備註</span><span class="text-[15px] text-slate-500 italic font-medium">${note.remind}</span></div>` : ''}
                         </div>` : ''}
                     </div>`;
                 }).join('');
 
                 fullHtml += `
-                    <div class="card-cartoon rounded-[2.5rem] p-8 ${isToday ? 'is-today' : 'is-not-today'}">
-                        <div class="flex items-center justify-between mb-6">
-                            <div class="flex items-center gap-4">
-                                <span class="text-5xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-200'} cartoon-font">${current.getDate()}</span>
-                                <span class="text-sm font-black text-white bg-black px-4 py-1 rounded-full">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
-                            </div>
-                            ${isToday ? '<span class="text-3xl icon-float">⭐</span>' : ''}
+                    <div class="bg-white rounded-[2.5rem] p-8 shadow-xl border border-white/50 ${isToday ? 'ring-4 ring-blue-500/10 border-blue-100' : ''}">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-4xl font-black ${isToday ? 'text-blue-600' : 'text-slate-200'} font-mono">${current.getDate()}</span>
+                            <span class="text-sm font-black text-slate-400 bg-slate-100 px-4 py-1.5 rounded-full">${["週日","週一","週二","週三","週四","週五","週六"][weekday]}</span>
                         </div>
-                        <div class="space-y-1">${classHtml || '<p class="text-slate-200 text-sm font-bold py-6 italic text-center">--- 本日休假中 ---</p>'}</div>
+                        <div class="space-y-1">${classHtml || '<p class="text-slate-200 text-sm italic py-4">本日無課程</p>'}</div>
                     </div>`;
             }
             list.innerHTML = fullHtml;
