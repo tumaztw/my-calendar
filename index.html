@@ -25,7 +25,6 @@
             text-align: center;
             margin-bottom: 30px;
         }
-        /* 日期導航控制區 */
         .date-controls {
             display: flex;
             justify-content: center;
@@ -59,7 +58,7 @@
             font-size: 1.4rem;
             color: var(--primary-color);
             font-weight: bold;
-            min-width: 200px; /* 固定寬度避免跳動 */
+            min-width: 200px;
             text-align: center;
         }
         
@@ -242,19 +241,17 @@
     // ★ 程式邏輯區
     // ==========================================
 
-    // 全域變數：儲存當前顯示的日期 與 下載下來的資料
     let g_currentDate = new Date();
     let g_csvData = []; 
-    let g_classRecords = {};
+    let g_classRecords = {}; // 儲存紀錄的物件
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
     });
 
-    // 日期切換函式
     function changeDate(days) {
         g_currentDate.setDate(g_currentDate.getDate() + days);
-        renderSchedule(); // 重新渲染畫面
+        renderSchedule();
     }
 
     function fetchData() {
@@ -273,47 +270,58 @@
         });
     }
 
-    // 處理資料：先算出所有班級的最新紀錄
+    // 取得該日期與節次的「完整課程物件」(包含 Class 與 Subject)
+    function getCourseObjByDateAndPeriod(dateStr, period) {
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj)) return null;
+        
+        const dayOfWeek = dateObj.getDay();
+        if (!timetable[dayOfWeek]) return null;
+        
+        // 找到對應的課程
+        const course = timetable[dayOfWeek].find(c => c.period == period);
+        return course ? course : null;
+    }
+
+    // 處理資料：這次的 Key 改為「班級_科目」
     function processData() {
         g_classRecords = {}; 
+        
         g_csvData.forEach(row => {
             const date = row['日期']; 
             const period = row['節次']; 
+            
             if (date && period) {
-                const className = getClassByDateAndPeriod(date, period);
-                if (className) {
-                    if (!g_classRecords[className] || date > g_classRecords[className]['日期']) {
-                        g_classRecords[className] = row;
+                // 1. 根據日期與節次，反查出這堂課是「哪一班」且是「什麼科目」
+                const courseObj = getCourseObjByDateAndPeriod(date, period);
+                
+                if (courseObj) {
+                    // 2. 建立唯一的 Key：例如 "109_國語文" 或 "109_閱讀指導"
+                    // 這樣兩者就不會互相覆蓋了
+                    const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
+                    
+                    // 3. 找出該科目最新的紀錄
+                    if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
+                        g_classRecords[uniqueKey] = row;
                     }
                 }
             }
         });
     }
 
-    function getClassByDateAndPeriod(dateStr, period) {
-        const dateObj = new Date(dateStr);
-        if (isNaN(dateObj)) return null;
-        const dayOfWeek = dateObj.getDay();
-        if (!timetable[dayOfWeek]) return null;
-        const course = timetable[dayOfWeek].find(c => c.period == period);
-        return course ? course.class : null;
-    }
-
     function renderSchedule() {
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
         
-        // 1. 更新日期顯示
+        // 更新日期顯示
         const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
         dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
 
         container.innerHTML = '';
 
-        // 2. 取得當前日期的星期 (0-6)
         const dayOfWeek = g_currentDate.getDay();
         
-        // 3. 取得 YYYY-MM-DD 格式，用於表單預填
-        // 注意：要處理時區問題，確保拿到的是當地時間的 YMD
+        // 取得 YYYY-MM-DD
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
@@ -325,13 +333,13 @@
         }
 
         const todaysClasses = timetable[dayOfWeek];
-        // 複製並排序
         const sortedClasses = [...todaysClasses].sort((a, b) => a.period - b.period);
 
         sortedClasses.forEach(course => {
-            const lastRecord = g_classRecords[course.class];
+            // 讀取紀錄時，同樣使用「班級_科目」來當作 Key 尋找
+            const uniqueKey = `${course.class}_${course.subject}`;
+            const lastRecord = g_classRecords[uniqueKey];
             
-            // 使用當前選擇的日期 (dateStr) 產生連結
             const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
             const card = document.createElement('div');
@@ -364,7 +372,7 @@
             } else {
                 recordHtml = `
                     <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
-                        尚無此班級 (${course.class}) 的過往紀錄
+                        尚無此課程 (${course.class}${course.subject}) 的過往紀錄
                     </div>
                 `;
             }
