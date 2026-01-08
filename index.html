@@ -3,151 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學日誌 - 今日課表版</title>
+    <title>張老師智慧課表</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --history-bg: #fff9db; --today-btn: #e3faf2; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        :root { --primary: #2c3e50; --header-bg: #4a90e2; --cell-hover: #e3f2fd; --modal-bg: rgba(0,0,0,0.6); }
+        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 10px; background: #f4f4f4; }
         
-        /* 上方歷史顯示區 */
-        .history-panel { background: var(--history-bg); padding: 12px; border-radius: 10px; border: 1px solid #f5e79e; margin-bottom: 15px; }
-        .history-title { font-weight: bold; color: #856404; font-size: 0.9rem; margin-bottom: 5px; border-bottom: 1px solid #f5e79e; }
-        .history-content { font-size: 0.95rem; color: #333; line-height: 1.4; }
+        /* === 頂部控制區 === */
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
+        .week-nav button { background: var(--header-bg); color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+        .week-nav span { margin: 0 10px; font-weight: bold; }
 
-        /* 今日課表按鈕區 */
-        .today-schedule { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-        .class-btn { padding: 12px; border: 1px solid #c3e6cb; background: var(--today-btn); border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; }
-        .class-btn:hover { background: #d4edda; }
-        .class-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-        .class-btn small { display: block; font-size: 0.75rem; opacity: 0.8; }
-
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        textarea { height: 60px; }
-        
-        button.submit-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
-        #loading { text-align: center; color: var(--accent); font-size: 0.8rem; display: none; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2 style="text-align:center; margin:0 0 15px 0; color:var(--primary);">📅 今日教學與進度</h2>
-
-    <div id="historySection" class="history-panel">
-        <div class="history-title">💡 先前紀錄內容 (請先選擇下方課表)</div>
-        <div id="hist_info" class="history-content">點擊下方課表按鈕，自動抓取上次進度...</div>
-    </div>
-
-    <div style="font-weight:bold; margin-bottom:10px; font-size:0.9rem;">🚩 今日課表快速選擇：</div>
-    <div id="todayBtns" class="today-schedule">
-        </div>
-
-    <hr>
-
-    <div id="loading">📡 正在同步雲端資料...</div>
-
-    <form id="progressForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/formResponse" method="post" target="hidden_iframe">
-        <input type="hidden" name="entry.1620291828" id="field_date">
-        <input type="hidden" name="entry.244862663" id="field_period">
-
-        <div class="form-group">
-            <label id="selectedLabel">請選擇一節課...</label>
-        </div>
-
-        <div class="form-group">
-            <label>📖 教學進度更新</label>
-            <textarea name="entry.1001982669" id="in_progress"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>🔔 課堂提醒</label>
-            <textarea name="entry.476700209" id="in_reminder"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>📝 作業內容</label>
-            <textarea name="entry.1079052023" id="in_homework"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>✍️ 平時測驗</label>
-            <textarea name="entry.1279670059" id="in_quiz"></textarea>
-        </div>
-
-        <button type="submit" class="submit-btn" onclick="submitted=true">💾 儲存今日進度</button>
-    </form>
-</div>
-
-<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted){alert('紀錄成功！'); location.reload();}"></iframe>
-
-<script>
-    const SHEET_ID = '1SlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD';
-    
-    // 您的固定課表
-    const mySchedule = {
-        1: [{p:1, n:"109 國文"}, {p:2, n:"117 國文"}, {p:4, n:"116 國文"}],
-        2: [{p:2, n:"116 國文"}, {p:3, n:"109 國文"}, {p:5, n:"117 國文"}, {p:7, n:"116 閱讀"}],
-        3: [{p:2, n:"109 國文"}, {p:3, n:"116 國文"}, {p:7, n:"117 國文"}],
-        4: [{p:1, n:"109 國文"}, {p:3, n:"117 國文"}, {p:4, n:"116 國文"}, {p:6, n:"109 閱讀"}],
-        5: [{p:2, n:"116 國文"}, {p:5, n:"117 國文"}, {p:7, n:"109 國文"}]
-    };
-
-    window.onload = function() {
-        const now = new Date();
-        const day = now.getDay(); // 0-6
-        const dateStr = now.toISOString().split('T')[0];
-        document.getElementById('field_date').value = dateStr;
-
-        const btnContainer = document.getElementById('todayBtns');
-        const todayClasses = mySchedule[day] || [];
-
-        if(todayClasses.length === 0) {
-            btnContainer.innerHTML = "<div style='grid-column:1/3; text-align:center; color:grey;'>今日無排課</div>";
+        /* === 核心課表 (照片模式) === */
+        .timetable { 
+            display: grid; 
+            grid-template-columns: 40px repeat(5, 1fr); 
+            gap: 2px; 
+            background: #ccc; 
+            border: 1px solid #ccc;
         }
-
-        todayClasses.forEach(item => {
-            const btn = document.createElement('div');
-            btn.className = 'class-btn';
-            btn.innerHTML = `<small>第 ${item.p} 節</small><b>${item.n}</b>`;
-            btn.onclick = () => selectClass(item.p, item.n, btn);
-            btnContainer.appendChild(btn);
-        });
-    };
-
-    async function selectClass(period, className, btnElem) {
-        // UI 回饋
-        document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
-        btnElem.classList.add('active');
-        document.getElementById('field_period').value = period;
-        document.getElementById('selectedLabel').innerText = `📍 目前選取：第 ${period} 節 ${className}`;
+        .cell { 
+            background: white; 
+            min-height: 80px; 
+            padding: 5px; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .cell:hover { background: var(--cell-hover); }
+        /* 表頭樣式 */
+        .cell.header { background: var(--primary); color: white; font-weight: bold; min-height: 40px; cursor: default; }
+        .cell.time-col { background: #e0e0e0; font-weight: bold; cursor: default; }
         
-        // 開始抓取歷史
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('hist_info').innerText = "連線雲端中...";
+        /* 今天的特別標示 */
+        .cell.today-col { background: #fffbe6; } 
+        .cell.today-col:hover { background: #fff3cd; }
 
-        try {
-            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
-            const resp = await fetch(url);
-            const csv = await resp.text();
-            const rows = csv.split('\n').map(r => r.split('","').map(c => c.replace(/"/g, '')));
-            
-            // 尋找「最後一次」上這門課的紀錄
-            // 我們不限日期，只看這節課(Period)最新的紀錄
-            let found = null;
-            for (let i = rows.length - 1; i >= 0; i--) {
-                // 假設第 2 欄是節次 (Index 2)
-                if (rows[i][2] == period) {
-                    found = rows[i];
-                    break;
-                }
-            }
+        .class-name { font-weight: bold; color: #d35400; font-size: 1rem; margin-bottom: 3px; }
+        .time-label { font-size: 0.7rem; color: #888; }
+        .empty-class { color: #ddd; font-size: 1.5rem; }
 
-            if (found) {
-                const info = `
-                    <b>日期：</b>${found[1]}<br>
-                    <b>進度：</b>${found[3] || '無'}<br>
-                    <b>提醒：</b>${found[4] || '無'}<br>
-                    <b>作業：</b>${found[5] || '無'}
-                `;
+        /* === 彈出視窗 (Modal) === */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 1000; justify-content: center; align-items: center; }
+        .modal { background: white; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
+        @keyframes slideIn { from {transform: translateY(20px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+
+        /* 先知區塊 */
+        .prophet-box { background: #fff9db; border-left: 5px solid #f1c40f; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 0.9rem; color: #555; }
+        .prophet-title { font-weight: bold; color: #b38f00; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        
+        /* 表單區 */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: var(--primary); }
+        textarea { width: 100%; height: 60px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; resize: none; box-sizing: border-box; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+        button.save-btn { flex: 2; background: var(--header-bg); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+        button.cancel-btn { flex: 1; background: #95a5a6; color: white; border: none; padding: 12px
