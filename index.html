@@ -3,242 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師智慧課表</title>
+    <title>張老師教學進度看板</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --header-bg: #4a90e2; --cell-hover: #e3f2fd; --modal-bg: rgba(0,0,0,0.6); }
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 10px; background: #f4f4f4; }
-        
-        /* === 頂部控制區 === */
-        .controls { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 15px; background: white; padding: 15px; 
-            border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+        :root {
+            --primary-color: #4a6fa5;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --text-sub: #666;
+            --accent-color: #d84315;
         }
-        .title-group h2 { margin: 0; font-size: 1.3rem; color: var(--primary); }
-        .title-group small { color: #888; }
-
-        .nav-group { display: flex; align-items: center; gap: 10px; }
-        .nav-btn { background: var(--header-bg); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-        .nav-btn:hover { opacity: 0.9; }
-        
-        /* 日期選擇器樣式 */
-        input[type="date"] {
-            padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 1rem;
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
         }
-
-        /* === 核心課表 (照片模式) === */
-        .timetable { 
-            display: grid; 
-            grid-template-columns: 40px repeat(5, 1fr); 
-            gap: 3px; 
-            background: #ddd; 
-            border: 3px solid #ddd;
-            border-radius: 8px;
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .date-display {
+            font-size: 1.3rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .class-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
             overflow: hidden;
+            border-left: 6px solid var(--primary-color);
+            transition: transform 0.2s;
         }
-        .cell { 
-            background: white; 
-            min-height: 90px; 
-            padding: 5px; 
-            text-align: center; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
+        .class-card:hover {
+            transform: translateY(-2px);
+        }
+        .card-header {
+            background-color: #eef2f7;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
+            border-bottom: 1px solid #eee;
         }
-        .cell:hover { background: var(--cell-hover); transform: scale(1.02); z-index: 5; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        
-        /* 表頭與側邊欄 */
-        .cell.header { background: var(--primary); color: white; font-weight: bold; min-height: 45px; cursor: default; }
-        .cell.time-col { background: #e9ecef; color: #555; font-weight: bold; cursor: default; }
-        
-        /* 今天的特別標示 */
-        .cell.today-col { background: #fffde7; border: 2px solid #ffd700; z-index: 2; } 
-
-        .class-name { font-weight: bold; color: #d35400; font-size: 1.1rem; margin-bottom: 5px; }
-        .empty-class { color: #eee; font-size: 2rem; line-height: 0; }
-
-        /* === 彈出視窗 (Modal) === */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 1000; justify-content: center; align-items: center; }
-        .modal { background: white; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideIn 0.25s; }
-        @keyframes slideIn { from {transform: translateY(15px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
-
-        /* 先知區塊 */
-        .prophet-box { background: #fff9db; border-left: 5px solid #f1c40f; padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 0.95rem; color: #555; }
-        .prophet-title { font-weight: bold; color: #b38f00; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }
-        
-        /* 表單區 */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 0.95rem; color: var(--primary); }
-        textarea { width: 100%; height: 70px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: none; box-sizing: border-box; font-size: 1rem; }
-        .modal-footer { display: flex; gap: 10px; margin-top: 25px; }
-        button.save-btn { flex: 2; background: var(--header-bg); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
-        button.cancel-btn { flex: 1; background: #95a5a6; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; }
-        
-        #loading-text { font-size: 0.8rem; color: #666; font-style: italic; display:none; }
-
-        /* RWD */
-        @media (max-width: 600px) {
-            .controls { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .nav-group { width: 100%; justify-content: space-between; }
-            .timetable { grid-template-columns: 25px repeat(5, 1fr); }
-            .cell { font-size: 0.8rem; min-height: 70px; padding: 2px; }
-            .class-name { font-size: 0.9rem; }
+        .period-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .class-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .last-record {
+            background-color: #fff8e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            border: 1px solid #ffe0b2;
+        }
+        .last-record h4 {
+            margin: 0 0 12px 0;
+            color: var(--accent-color);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px dashed #ffcc80;
+            padding-bottom: 8px;
+        }
+        .record-item {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            display: flex;
+        }
+        .record-label {
+            font-weight: bold;
+            color: var(--text-sub);
+            min-width: 50px;
+            flex-shrink: 0;
+        }
+        .record-content {
+            word-break: break-word;
+        }
+        .btn-add {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            transition: background 0.3s;
+        }
+        .btn-add:hover {
+            background-color: #36527a;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-sub);
+            font-size: 1.1rem;
+        }
+        .no-class {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 12px;
+            color: var(--text-sub);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        /* 閱讀指導課樣式 */
+        .type-reading {
+            border-left-color: #2e7d32;
+        }
+        .type-reading .period-badge {
+            background-color: #2e7d32;
+        }
+        .type-reading .btn-add {
+            background-color: #2e7d32;
+        }
+        .type-reading .btn-add:hover {
+            background-color: #1b5e20;
         }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <div class="title-group">
-        <h2 id="monthTitle">2026年 1月</h2>
-        <small id="dateRange">週課表</small>
-    </div>
-    <div class="nav-group">
-        <button class="nav-btn" onclick="changeWeek(-7)">◀ 上週</button>
-        <input type="date" id="weekPicker" onchange="jumpToDate(this.value)">
-        <button class="nav-btn" onclick="changeWeek(7)">下週 ▶</button>
-    </div>
+<div class="header">
+    <h1>張老師教學進度看板</h1>
+    <div class="date-display" id="currentDate"></div>
 </div>
 
-<div class="timetable" id="timetable">
-    </div>
-
-<div class="modal-overlay" id="editModal">
-    <div class="modal">
-        <h3 id="modalTitle" style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:var(--primary);">編輯進度</h3>
-        
-        <div class="prophet-box">
-            <div class="prophet-title">
-                <span>💡 上次上課紀錄</span>
-                <span id="loading-text">查詢中...</span>
-            </div>
-            <div id="prevContent" style="min-height: 20px;">點擊格子後自動查詢...</div>
-        </div>
-
-        <form id="progressForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/formResponse" method="post" target="hidden_iframe">
-            <input type="hidden" name="entry.1620291828" id="field_date">
-            <input type="hidden" name="entry.244862663" id="field_period">
-
-            <div class="form-group">
-                <label>📖 本次教學進度</label>
-                <textarea name="entry.1001982669" id="in_progress" placeholder="今天教了什麼？"></textarea>
-            </div>
-            <div class="form-group">
-                <label>🔔 課堂提醒</label>
-                <textarea name="entry.476700209" id="in_reminder"></textarea>
-            </div>
-            <div class="form-group">
-                <label>📝 作業內容</label>
-                <textarea name="entry.1079052023" id="in_homework"></textarea>
-            </div>
-            <div class="form-group">
-                <label>✍️ 平時測驗</label>
-                <textarea name="entry.1279670059" id="in_quiz"></textarea>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
-                <button type="submit" class="save-btn" onclick="submitted=true">💾 儲存紀錄</button>
-            </div>
-        </form>
+<div class="container" id="scheduleContainer">
+    <div class="loading">
+        <p>⏳ 正在載入課表與雲端進度...</p>
     </div>
 </div>
-
-<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted){alert('儲存成功！'); closeModal();}"></iframe>
 
 <script>
-    const SHEET_ID = '1SlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD';
-    let currentMonday = new Date();
+    // ==========================================
+    // ★ 設定區 (已填入您的資料)
+    // ==========================================
     
-    // 初始化：定位到本週一
-    const day = currentMonday.getDay() || 7; 
-    if(day !== 1) currentMonday.setDate(currentMonday.getDate() - day + 1);
+    // 1. Google Sheet 發布的 CSV 網址
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
 
-    // 您的課表
-    const schedule = {
-        1: {1:"109 國文", 2:"117 國文", 4:"116 國文"},
-        2: {2:"116 國文", 3:"109 國文", 5:"117 國文", 7:"116 閱讀"},
-        3: {2:"109 國文", 3:"116 國文", 7:"117 國文"},
-        4: {1:"109 國文", 3:"117 國文", 4:"116 國文", 6:"109 閱讀"},
-        5: {2:"116 國文", 5:"117 國文", 7:"109 國文"}
+    // 2. 表單基礎網址
+    const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform';
+    
+    // 3. 表單欄位 ID (用於自動填寫日期與節次)
+    const entryIds = {
+        date: 'entry.1279670059',
+        period: 'entry.1620291828'
     };
 
-    window.onload = function() { 
-        // 預設選單為今天
-        document.getElementById('weekPicker').value = new Date().toISOString().split('T')[0];
-        renderTimetable(); 
+    // 4. 課表資料庫 (根據 PDF 建立，用於反查班級)
+    //    Key: 星期幾 (1-5), Value: 課程列表
+    const timetable = {
+        1: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 2, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' }
+        ],
+        2: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 3, class: '109', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '116', subject: '閱讀指導' }
+        ],
+        3: [
+            { period: 2, class: '109', subject: '國語文' },
+            { period: 3, class: '116', subject: '國語文' },
+            { period: 7, class: '117', subject: '國語文' }
+        ],
+        4: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 3, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' },
+            { period: 6, class: '109', subject: '閱讀指導' }
+        ],
+        5: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '109', subject: '國語文' }
+        ]
     };
 
-    // 切換週次
-    function changeWeek(offset) {
-        currentMonday.setDate(currentMonday.getDate() + offset);
-        updatePickerAndRender();
+    // ==========================================
+    // ★ 程式邏輯區
+    // ==========================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDateDisplay();
+        fetchData();
+    });
+
+    function updateDateDisplay() {
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-TW', options);
     }
 
-    // 指定日期跳轉
-    function jumpToDate(val) {
-        if(!val) return;
-        const targetDate = new Date(val);
-        const d = targetDate.getDay() || 7;
-        targetDate.setDate(targetDate.getDate() - d + 1); // 找出該週週一
-        currentMonday = targetDate;
-        renderTimetable();
+    function fetchData() {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                // 成功抓取後，處理資料
+                processAndRender(results.data);
+            },
+            error: function(err) {
+                console.error("Error fetching CSV:", err);
+                document.getElementById('scheduleContainer').innerHTML = 
+                    '<div class="no-class">無法讀取資料，請檢查網路連線。</div>';
+            }
+        });
     }
 
-    function updatePickerAndRender() {
-        // 更新 picker 顯示為該週週一，方便使用者知道目前在哪
-        document.getElementById('weekPicker').value = currentMonday.toISOString().split('T')[0];
-        renderTimetable();
+    // 將 (日期+節次) 轉換為 (班級) 的輔助函式
+    function getClassByDateAndPeriod(dateStr, period) {
+        // dateStr 格式預期為 2025-12-19
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj)) return null;
+
+        const dayOfWeek = dateObj.getDay(); // 0-6
+        if (!timetable[dayOfWeek]) return null;
+
+        // 比對節次 (CSV中的節次 vs 課表中的節次)
+        const course = timetable[dayOfWeek].find(c => c.period == period);
+        return course ? course.class : null;
     }
 
-    function renderTimetable() {
-        const container = document.getElementById('timetable');
-        container.innerHTML = '';
-        
-        // 標題與日期
-        document.getElementById('monthTitle').innerText = `${currentMonday.getFullYear()}年 ${currentMonday.getMonth()+1}月`;
-        let endDay = new Date(currentMonday);
-        endDay.setDate(endDay.getDate() + 4);
-        document.getElementById('dateRange').innerText = `${currentMonday.getDate()}日 ~ ${endDay.getDate()}日`;
+    function processAndRender(csvData) {
+        // 1. 整理 CSV 資料，將每一筆紀錄標上 "班級"
+        // 並且依班級分組，找出每個班級的最新紀錄
+        const classRecords = {}; 
 
-        // 渲染表頭
-        container.appendChild(createDiv('header', '節次'));
-        const weekDays = ['週一', '週二', '週三', '週四', '週五'];
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        for(let i=0; i<5; i++) {
-            let d = new Date(currentMonday);
-            d.setDate(currentMonday.getDate() + i);
-            let dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-            let fullDate = d.toISOString().split('T')[0];
-            let isToday = (fullDate === todayStr);
+        csvData.forEach(row => {
+            // 對應您提供的 CSV 欄位名稱
+            const date = row['日期']; 
+            const period = row['節次']; 
             
-            container.appendChild(createDiv(isToday ? 'header today-col' : 'header', `${weekDays[i]}<br><span style="font-size:0.75em; font-weight:normal;">${dateStr}</span>`));
+            if (date && period) {
+                // 自動推算這一筆紀錄是哪個班級的
+                const className = getClassByDateAndPeriod(date, period);
+                
+                if (className) {
+                    // 如果這個班級還沒有紀錄，或這筆紀錄比目前的紀錄更新
+                    if (!classRecords[className] || date > classRecords[className]['日期']) {
+                        classRecords[className] = row;
+                    }
+                }
+            }
+        });
+
+        renderSchedule(classRecords);
+    }
+
+    function renderSchedule(lastRecords) {
+        const container = document.getElementById('scheduleContainer');
+        container.innerHTML = '';
+
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD for form pre-fill
+
+        if (!timetable[dayOfWeek]) {
+            container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程，好好休息！</div>';
+            return;
         }
 
-        // 渲染 1~8 節
-        for(let p=1; p<=8; p++) {
-            container.appendChild(createDiv('time-col', `第${p}節`));
-            
-            for(let d=1; d<=5; d++) {
-                let cellDate = new Date(currentMonday);
-                cellDate.setDate(currentMonday.getDate() + (d-1));
-                let dateKey = cellDate.toISOString().split('T')[0];
-                let isToday = (dateKey === todayStr);
+        const todaysClasses = timetable[dayOfWeek];
 
-                let className = schedule[d]?.[p] || "";
-                
-                let cellDiv = document.createElement('div');
-                cellDiv.className = isToday ? 'cell today-col' : 'cell';
-                
-                if(className) {
-                    cellDiv.innerHTML = `<div class="class-name">${className}</div>`;
-                    cellDiv.onclick = () => openModal(className, dateKey, p);
-                } else {
-                    cellDiv.innerHTML = `<span class="empty-class">·</span>`;
-                }
+        // 依節次從小到大排序
+        todaysClasses.sort((a, b) => a.period - b.period);
+
+        todaysClasses.forEach(course => {
+            const lastRecord = lastRecords[course.class];
+            
+            // 產生預填表單的連結
+            const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
+
+            const card = document.createElement('div');
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''}`;
+            
+            let recordHtml = '';
+            if (lastRecord) {
+                recordHtml = `
+                    <div class="last-record">
+                        <h4>📅 上次進度 (${lastRecord['日期']} - 第 ${lastRecord['節次']} 節)</h4>
+                        <div class="record-item">
+                            <span class="record-label">進度：</span>
+                            <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">作業：</span>
+                            <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">提醒：</span>
+                            <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
+                        </div>
+                        ${lastRecord['平時測驗'] ? `
+                        <div class="record-item">
+                            <span class="record-label">測驗：</span>
+                            <span class="record-content">${lastRecord['平時測驗']}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+            } else {
+                recordHtml = `
+                    <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
+                        尚無此班級 (${course.class}) 的過往紀錄
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="period-badge">第 ${course.period} 節</span>
+                    <span class="class-title">${course.class} 班 - ${course.subject}</span>
+                </div>
+                <div class="card-body">
+                    ${recordHtml}
+                    <a href="${formLink}" target="_blank" class="btn-add">
+                        ✏️ 填寫本日進度
+                    </a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>
