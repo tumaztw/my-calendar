@@ -9,59 +9,236 @@
         body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 10px; background: #f4f4f4; }
         
         /* === 頂部控制區 === */
-        .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: white; padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { margin: 0; font-size: 1.2rem; color: var(--primary); }
-        .week-nav button { background: var(--header-bg); color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-        .week-nav span { margin: 0 10px; font-weight: bold; }
+        .controls { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; background: white; padding: 15px; 
+            border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+        }
+        .title-group h2 { margin: 0; font-size: 1.3rem; color: var(--primary); }
+        .title-group small { color: #888; }
+
+        .nav-group { display: flex; align-items: center; gap: 10px; }
+        .nav-btn { background: var(--header-bg); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .nav-btn:hover { opacity: 0.9; }
+        
+        /* 日期選擇器樣式 */
+        input[type="date"] {
+            padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 1rem;
+        }
 
         /* === 核心課表 (照片模式) === */
         .timetable { 
             display: grid; 
             grid-template-columns: 40px repeat(5, 1fr); 
-            gap: 2px; 
-            background: #ccc; 
-            border: 1px solid #ccc;
+            gap: 3px; 
+            background: #ddd; 
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
         }
         .cell { 
             background: white; 
-            min-height: 80px; 
+            min-height: 90px; 
             padding: 5px; 
             text-align: center; 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
             align-items: center;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: 0.2s;
             position: relative;
         }
-        .cell:hover { background: var(--cell-hover); }
-        /* 表頭樣式 */
-        .cell.header { background: var(--primary); color: white; font-weight: bold; min-height: 40px; cursor: default; }
-        .cell.time-col { background: #e0e0e0; font-weight: bold; cursor: default; }
+        .cell:hover { background: var(--cell-hover); transform: scale(1.02); z-index: 5; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* 表頭與側邊欄 */
+        .cell.header { background: var(--primary); color: white; font-weight: bold; min-height: 45px; cursor: default; }
+        .cell.time-col { background: #e9ecef; color: #555; font-weight: bold; cursor: default; }
         
         /* 今天的特別標示 */
-        .cell.today-col { background: #fffbe6; } 
-        .cell.today-col:hover { background: #fff3cd; }
+        .cell.today-col { background: #fffde7; border: 2px solid #ffd700; z-index: 2; } 
 
-        .class-name { font-weight: bold; color: #d35400; font-size: 1rem; margin-bottom: 3px; }
-        .time-label { font-size: 0.7rem; color: #888; }
-        .empty-class { color: #ddd; font-size: 1.5rem; }
+        .class-name { font-weight: bold; color: #d35400; font-size: 1.1rem; margin-bottom: 5px; }
+        .empty-class { color: #eee; font-size: 2rem; line-height: 0; }
 
         /* === 彈出視窗 (Modal) === */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--modal-bg); z-index: 1000; justify-content: center; align-items: center; }
-        .modal { background: white; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
-        @keyframes slideIn { from {transform: translateY(20px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        .modal { background: white; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideIn 0.25s; }
+        @keyframes slideIn { from {transform: translateY(15px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
 
         /* 先知區塊 */
-        .prophet-box { background: #fff9db; border-left: 5px solid #f1c40f; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 0.9rem; color: #555; }
-        .prophet-title { font-weight: bold; color: #b38f00; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .prophet-box { background: #fff9db; border-left: 5px solid #f1c40f; padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 0.95rem; color: #555; }
+        .prophet-title { font-weight: bold; color: #b38f00; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }
         
         /* 表單區 */
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: var(--primary); }
-        textarea { width: 100%; height: 60px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; resize: none; box-sizing: border-box; }
-        .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
-        button.save-btn { flex: 2; background: var(--header-bg); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 1rem; cursor: pointer; }
-        button.cancel-btn { flex: 1; background: #95a5a6; color: white; border: none; padding: 12px
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 0.95rem; color: var(--primary); }
+        textarea { width: 100%; height: 70px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: none; box-sizing: border-box; font-size: 1rem; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 25px; }
+        button.save-btn { flex: 2; background: var(--header-bg); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        button.cancel-btn { flex: 1; background: #95a5a6; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; }
+        
+        #loading-text { font-size: 0.8rem; color: #666; font-style: italic; display:none; }
+
+        /* RWD */
+        @media (max-width: 600px) {
+            .controls { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .nav-group { width: 100%; justify-content: space-between; }
+            .timetable { grid-template-columns: 25px repeat(5, 1fr); }
+            .cell { font-size: 0.8rem; min-height: 70px; padding: 2px; }
+            .class-name { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="title-group">
+        <h2 id="monthTitle">2026年 1月</h2>
+        <small id="dateRange">週課表</small>
+    </div>
+    <div class="nav-group">
+        <button class="nav-btn" onclick="changeWeek(-7)">◀ 上週</button>
+        <input type="date" id="weekPicker" onchange="jumpToDate(this.value)">
+        <button class="nav-btn" onclick="changeWeek(7)">下週 ▶</button>
+    </div>
+</div>
+
+<div class="timetable" id="timetable">
+    </div>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3 id="modalTitle" style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px; color:var(--primary);">編輯進度</h3>
+        
+        <div class="prophet-box">
+            <div class="prophet-title">
+                <span>💡 上次上課紀錄</span>
+                <span id="loading-text">查詢中...</span>
+            </div>
+            <div id="prevContent" style="min-height: 20px;">點擊格子後自動查詢...</div>
+        </div>
+
+        <form id="progressForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/formResponse" method="post" target="hidden_iframe">
+            <input type="hidden" name="entry.1620291828" id="field_date">
+            <input type="hidden" name="entry.244862663" id="field_period">
+
+            <div class="form-group">
+                <label>📖 本次教學進度</label>
+                <textarea name="entry.1001982669" id="in_progress" placeholder="今天教了什麼？"></textarea>
+            </div>
+            <div class="form-group">
+                <label>🔔 課堂提醒</label>
+                <textarea name="entry.476700209" id="in_reminder"></textarea>
+            </div>
+            <div class="form-group">
+                <label>📝 作業內容</label>
+                <textarea name="entry.1079052023" id="in_homework"></textarea>
+            </div>
+            <div class="form-group">
+                <label>✍️ 平時測驗</label>
+                <textarea name="entry.1279670059" id="in_quiz"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+                <button type="submit" class="save-btn" onclick="submitted=true">💾 儲存紀錄</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted){alert('儲存成功！'); closeModal();}"></iframe>
+
+<script>
+    const SHEET_ID = '1SlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD';
+    let currentMonday = new Date();
+    
+    // 初始化：定位到本週一
+    const day = currentMonday.getDay() || 7; 
+    if(day !== 1) currentMonday.setDate(currentMonday.getDate() - day + 1);
+
+    // 您的課表
+    const schedule = {
+        1: {1:"109 國文", 2:"117 國文", 4:"116 國文"},
+        2: {2:"116 國文", 3:"109 國文", 5:"117 國文", 7:"116 閱讀"},
+        3: {2:"109 國文", 3:"116 國文", 7:"117 國文"},
+        4: {1:"109 國文", 3:"117 國文", 4:"116 國文", 6:"109 閱讀"},
+        5: {2:"116 國文", 5:"117 國文", 7:"109 國文"}
+    };
+
+    window.onload = function() { 
+        // 預設選單為今天
+        document.getElementById('weekPicker').value = new Date().toISOString().split('T')[0];
+        renderTimetable(); 
+    };
+
+    // 切換週次
+    function changeWeek(offset) {
+        currentMonday.setDate(currentMonday.getDate() + offset);
+        updatePickerAndRender();
+    }
+
+    // 指定日期跳轉
+    function jumpToDate(val) {
+        if(!val) return;
+        const targetDate = new Date(val);
+        const d = targetDate.getDay() || 7;
+        targetDate.setDate(targetDate.getDate() - d + 1); // 找出該週週一
+        currentMonday = targetDate;
+        renderTimetable();
+    }
+
+    function updatePickerAndRender() {
+        // 更新 picker 顯示為該週週一，方便使用者知道目前在哪
+        document.getElementById('weekPicker').value = currentMonday.toISOString().split('T')[0];
+        renderTimetable();
+    }
+
+    function renderTimetable() {
+        const container = document.getElementById('timetable');
+        container.innerHTML = '';
+        
+        // 標題與日期
+        document.getElementById('monthTitle').innerText = `${currentMonday.getFullYear()}年 ${currentMonday.getMonth()+1}月`;
+        let endDay = new Date(currentMonday);
+        endDay.setDate(endDay.getDate() + 4);
+        document.getElementById('dateRange').innerText = `${currentMonday.getDate()}日 ~ ${endDay.getDate()}日`;
+
+        // 渲染表頭
+        container.appendChild(createDiv('header', '節次'));
+        const weekDays = ['週一', '週二', '週三', '週四', '週五'];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        for(let i=0; i<5; i++) {
+            let d = new Date(currentMonday);
+            d.setDate(currentMonday.getDate() + i);
+            let dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+            let fullDate = d.toISOString().split('T')[0];
+            let isToday = (fullDate === todayStr);
+            
+            container.appendChild(createDiv(isToday ? 'header today-col' : 'header', `${weekDays[i]}<br><span style="font-size:0.75em; font-weight:normal;">${dateStr}</span>`));
+        }
+
+        // 渲染 1~8 節
+        for(let p=1; p<=8; p++) {
+            container.appendChild(createDiv('time-col', `第${p}節`));
+            
+            for(let d=1; d<=5; d++) {
+                let cellDate = new Date(currentMonday);
+                cellDate.setDate(currentMonday.getDate() + (d-1));
+                let dateKey = cellDate.toISOString().split('T')[0];
+                let isToday = (dateKey === todayStr);
+
+                let className = schedule[d]?.[p] || "";
+                
+                let cellDiv = document.createElement('div');
+                cellDiv.className = isToday ? 'cell today-col' : 'cell';
+                
+                if(className) {
+                    cellDiv.innerHTML = `<div class="class-name">${className}</div>`;
+                    cellDiv.onclick = () => openModal(className, dateKey, p);
+                } else {
+                    cellDiv.innerHTML = `<span class="empty-class">·</span>`;
+                }
