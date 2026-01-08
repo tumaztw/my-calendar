@@ -3,147 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學日誌 - 智慧連動版</title>
+    <title>張老師教學日誌 - 今日課表版</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --history: #fdf6e3; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; padding: 10px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: #eef2f7; padding: 10px; border-radius: 8px; }
-        .date-nav input { border: 1px solid #ccc; padding: 5px; border-radius: 4px; }
+        :root { --primary: #2c3e50; --accent: #3498db; --history-bg: #fff9db; --today-btn: #e3faf2; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        .form-group { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--primary); }
-        
-        /* 歷史紀錄框 */
-        .history-view { font-size: 0.9rem; color: #666; background: var(--history); padding: 8px; border-radius: 5px; margin-bottom: 8px; border-left: 4px solid #b58900; min-height: 20px; }
-        
+        /* 上方歷史顯示區 */
+        .history-panel { background: var(--history-bg); padding: 12px; border-radius: 10px; border: 1px solid #f5e79e; margin-bottom: 15px; }
+        .history-title { font-weight: bold; color: #856404; font-size: 0.9rem; margin-bottom: 5px; border-bottom: 1px solid #f5e79e; }
+        .history-content { font-size: 0.95rem; color: #333; line-height: 1.4; }
+
+        /* 今日課表按鈕區 */
+        .today-schedule { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .class-btn { padding: 12px; border: 1px solid #c3e6cb; background: var(--today-btn); border-radius: 8px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .class-btn:hover { background: #d4edda; }
+        .class-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .class-btn small { display: block; font-size: 0.75rem; opacity: 0.8; }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         textarea { height: 60px; }
         
-        button.submit-btn { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #loading-msg { color: var(--accent); text-align: center; font-size: 0.8rem; display: none; }
+        button.submit-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
+        #loading { text-align: center; color: var(--accent); font-size: 0.8rem; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; margin-top:0; color:var(--primary);">📅 教學進度智慧紀錄</h2>
+    <h2 style="text-align:center; margin:0 0 15px 0; color:var(--primary);">📅 今日教學與進度</h2>
 
-    <div class="date-nav">
-        <button onclick="changeDate(-1)">◀</button>
-        <input type="date" id="targetDate" onchange="fetchHistory()">
-        <button onclick="changeDate(1)">▶</button>
+    <div id="historySection" class="history-panel">
+        <div class="history-title">💡 先前紀錄內容 (請先選擇下方課表)</div>
+        <div id="hist_info" class="history-content">點擊下方課表按鈕，自動抓取上次進度...</div>
     </div>
 
-    <div id="loading-msg">正在查詢雲端進度...</div>
+    <div style="font-weight:bold; margin-bottom:10px; font-size:0.9rem;">🚩 今日課表快速選擇：</div>
+    <div id="todayBtns" class="today-schedule">
+        </div>
+
+    <hr>
+
+    <div id="loading">📡 正在同步雲端資料...</div>
 
     <form id="progressForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/formResponse" method="post" target="hidden_iframe">
-        
-        <input type="hidden" name="entry.1620291828" id="hidden_date">
-        
+        <input type="hidden" name="entry.1620291828" id="field_date">
+        <input type="hidden" name="entry.244862663" id="field_period">
+
         <div class="form-group">
-            <label>⏰ 授課節次</label>
-            <select name="entry.244862663" id="targetPeriod" onchange="fetchHistory()">
-                <option value="1">第一節</option><option value="2">第二節</option>
-                <option value="3">第三節</option><option value="4">第四節</option>
-                <option value="5">第五節</option><option value="6">第六節</option>
-                <option value="7">第七節</option><option value="8">第八節</option>
-            </select>
+            <label id="selectedLabel">請選擇一節課...</label>
         </div>
 
         <div class="form-group">
-            <label>📖 教學進度</label>
-            <div id="view_progress" class="history-view">查無紀錄</div>
-            <textarea name="entry.1001982669" id="in_progress" placeholder="輸入今日新進度..."></textarea>
+            <label>📖 教學進度更新</label>
+            <textarea name="entry.1001982669" id="in_progress"></textarea>
         </div>
 
         <div class="form-group">
             <label>🔔 課堂提醒</label>
-            <div id="view_reminder" class="history-view">查無紀錄</div>
-            <textarea name="entry.476700209" id="in_reminder" placeholder="填寫提醒事項..."></textarea>
+            <textarea name="entry.476700209" id="in_reminder"></textarea>
         </div>
 
         <div class="form-group">
             <label>📝 作業內容</label>
-            <div id="view_homework" class="history-view">查無紀錄</div>
-            <textarea name="entry.1079052023" id="in_homework" placeholder="填寫作業..."></textarea>
+            <textarea name="entry.1079052023" id="in_homework"></textarea>
         </div>
 
         <div class="form-group">
             <label>✍️ 平時測驗</label>
-            <div id="view_quiz" class="history-view">查無紀錄</div>
-            <textarea name="entry.1279670059" id="in_quiz" placeholder="填寫小考內容..."></textarea>
+            <textarea name="entry.1279670059" id="in_quiz"></textarea>
         </div>
 
-        <button type="submit" class="submit-btn" onclick="submitted=true">💾 確認儲存紀錄</button>
+        <button type="submit" class="submit-btn" onclick="submitted=true">💾 儲存今日進度</button>
     </form>
 </div>
 
-<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted){alert('儲存成功！'); location.reload();}"></iframe>
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(typeof submitted !== 'undefined' && submitted){alert('紀錄成功！'); location.reload();}"></iframe>
 
 <script>
-    // 您的試算表 ID
     const SHEET_ID = '1SlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD';
     
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('targetDate').value = today;
-        fetchHistory();
+    // 您的固定課表
+    const mySchedule = {
+        1: [{p:1, n:"109 國文"}, {p:2, n:"117 國文"}, {p:4, n:"116 國文"}],
+        2: [{p:2, n:"116 國文"}, {p:3, n:"109 國文"}, {p:5, n:"117 國文"}, {p:7, n:"116 閱讀"}],
+        3: [{p:2, n:"109 國文"}, {p:3, n:"116 國文"}, {p:7, n:"117 國文"}],
+        4: [{p:1, n:"109 國文"}, {p:3, n:"117 國文"}, {p:4, n:"116 國文"}, {p:6, n:"109 閱讀"}],
+        5: [{p:2, n:"116 國文"}, {p:5, n:"117 國文"}, {p:7, n:"109 國文"}]
     };
 
-    function changeDate(days) {
-        const d = new Date(document.getElementById('targetDate').value);
-        d.setDate(d.getDate() + days);
-        document.getElementById('targetDate').value = d.toISOString().split('T')[0];
-        fetchHistory();
-    }
+    window.onload = function() {
+        const now = new Date();
+        const day = now.getDay(); // 0-6
+        const dateStr = now.toISOString().split('T')[0];
+        document.getElementById('field_date').value = dateStr;
 
-    async function fetchHistory() {
-        const date = document.getElementById('targetDate').value;
-        const period = document.getElementById('targetPeriod').value;
-        document.getElementById('hidden_date').value = date;
-        document.getElementById('loading-msg').style.display = 'block';
+        const btnContainer = document.getElementById('todayBtns');
+        const todayClasses = mySchedule[day] || [];
+
+        if(todayClasses.length === 0) {
+            btnContainer.innerHTML = "<div style='grid-column:1/3; text-align:center; color:grey;'>今日無排課</div>";
+        }
+
+        todayClasses.forEach(item => {
+            const btn = document.createElement('div');
+            btn.className = 'class-btn';
+            btn.innerHTML = `<small>第 ${item.p} 節</small><b>${item.n}</b>`;
+            btn.onclick = () => selectClass(item.p, item.n, btn);
+            btnContainer.appendChild(btn);
+        });
+    };
+
+    async function selectClass(period, className, btnElem) {
+        // UI 回饋
+        document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+        btnElem.classList.add('active');
+        document.getElementById('field_period').value = period;
+        document.getElementById('selectedLabel').innerText = `📍 目前選取：第 ${period} 節 ${className}`;
+        
+        // 開始抓取歷史
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('hist_info').innerText = "連線雲端中...";
 
         try {
-            // 讀取發佈的 CSV 資料
             const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
             const resp = await fetch(url);
             const csv = await resp.text();
-            
-            // 解析 CSV 行
             const rows = csv.split('\n').map(r => r.split('","').map(c => c.replace(/"/g, '')));
             
-            // 搜尋匹配的最新一筆 (從後往前找)
+            // 尋找「最後一次」上這門課的紀錄
+            // 我們不限日期，只看這節課(Period)最新的紀錄
             let found = null;
             for (let i = rows.length - 1; i >= 0; i--) {
-                if (rows[i][1] === date && rows[i][2] === period) {
+                // 假設第 2 欄是節次 (Index 2)
+                if (rows[i][2] == period) {
                     found = rows[i];
                     break;
                 }
             }
 
             if (found) {
-                updateUI('view_progress', 'in_progress', found[3]);
-                updateUI('view_reminder', 'in_reminder', found[4]);
-                updateUI('view_homework', 'in_homework', found[5]);
-                updateUI('view_quiz', 'in_quiz', found[6]);
-            } else {
-                ['progress', 'reminder', 'homework', 'quiz'].forEach(f => {
-                    document.getElementById('view_'+f).innerText = "（當天此節無紀錄）";
-                    document.getElementById('in_'+f).value = "";
-                });
-            }
-        } catch (e) {
-            console.error("讀取失敗", e);
-        }
-        document.getElementById('loading-msg').style.display = 'none';
-    }
-
-    function updateUI(viewId, inId, value) {
-        const val = value || "無內容";
-        document.getElementById(viewId).innerText = "上次紀錄：" + val;
-        document.getElementById(inId).value = (value === "無內容") ? "" : val;
-    }
-</script>
-</body>
-</html>
+                const info = `
+                    <b>日期：</b>${found[1]}<br>
+                    <b>進度：</b>${found[3] || '無'}<br>
+                    <b>提醒：</b>${found[4] || '無'}<br>
+                    <b>作業：</b>${found[5] || '無'}
+                `;
