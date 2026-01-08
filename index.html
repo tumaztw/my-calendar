@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教學進度看板</title>
+    <title>張老師教學進度看板</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
@@ -13,7 +13,6 @@
             --text-main: #333;
             --text-sub: #666;
             --accent-color: #d84315;
-            --error-color: #d32f2f;
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -26,57 +25,12 @@
             text-align: center;
             margin-bottom: 30px;
         }
-        /* 錯誤訊息顯示區 */
-        #error-log {
-            background-color: #ffebee;
-            color: var(--error-color);
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--error-color);
-            display: none; /* 預設隱藏 */
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            text-align: left;
-        }
-
-        .date-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            margin-top: 15px;
-            user-select: none;
-        }
-        .nav-btn {
-            background-color: white;
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        .nav-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        .nav-btn:active {
-            transform: scale(0.95);
-        }
         .date-display {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             color: var(--primary-color);
             font-weight: bold;
-            min-width: 200px;
-            text-align: center;
+            margin-top: 10px;
         }
-        
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -178,6 +132,7 @@
             color: var(--text-sub);
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
+        /* 閱讀指導課樣式 */
         .type-reading {
             border-left-color: #2e7d32;
         }
@@ -196,14 +151,7 @@
 
 <div class="header">
     <h1>張老師教學進度看板</h1>
-    
-    <div id="error-log"></div>
-
-    <div class="date-controls">
-        <button class="nav-btn" onclick="changeDate(-1)">◀</button>
-        <div class="date-display" id="currentDateDisplay"></div>
-        <button class="nav-btn" onclick="changeDate(1)">▶</button>
-    </div>
+    <div class="date-display" id="currentDate"></div>
 </div>
 
 <div class="container" id="scheduleContainer">
@@ -213,25 +161,24 @@
 </div>
 
 <script>
-    // 1. 全域錯誤攔截：如果有程式錯誤，直接顯示在畫面上
-    window.onerror = function(message, source, lineno, colno, error) {
-        const errorDiv = document.getElementById('error-log');
-        errorDiv.style.display = 'block';
-        errorDiv.innerHTML += `❌ 發生錯誤: ${message}<br><small>${source}:${lineno}</small><br>`;
-        return false;
-    };
-
     // ==========================================
     // ★ 設定區
     // ==========================================
+    
+    // 1. Google Sheet 發布的 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
+
+    // 2. 表單基礎網址 (修正重點：加入 ?usp=pp_url)
     const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
+    // 3. 表單欄位 ID (用於自動填寫日期與節次)
     const entryIds = {
         date: 'entry.1279670059',
         period: 'entry.1620291828'
     };
 
+    // 4. 課表資料庫 (根據 PDF 建立)
+    //    Key: 星期幾 (1-5), Value: 課程列表
     const timetable = {
         1: [
             { period: 1, class: '109', subject: '國語文' },
@@ -266,186 +213,147 @@
     // ★ 程式邏輯區
     // ==========================================
 
-    let g_currentDate = new Date();
-    let g_csvData = []; 
-    let g_classRecords = {}; 
-    const weekMap = ['日', '一', '二', '三', '四', '五', '六']; 
-
     document.addEventListener('DOMContentLoaded', () => {
-        try {
-            fetchData();
-        } catch (e) {
-            console.error(e);
-            alert("初始化失敗: " + e.message);
-        }
+        updateDateDisplay();
+        fetchData();
     });
 
-    function changeDate(days) {
-        g_currentDate.setDate(g_currentDate.getDate() + days);
-        renderSchedule();
+    function updateDateDisplay() {
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-TW', options);
     }
 
     function fetchData() {
-        if (typeof Papa === 'undefined') {
-            throw new Error("CSV 解析器 (PapaParse) 載入失敗，請檢查網路連線。");
-        }
-
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             complete: function(results) {
-                console.log("CSV 下載成功", results);
-                g_csvData = results.data;
-                processData();
-                renderSchedule();
+                // 成功抓取後，處理資料
+                processAndRender(results.data);
             },
             error: function(err) {
-                console.error("Error:", err);
-                document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">❌ 無法讀取資料表，請檢查網路或 CSV 連結。</div>';
+                console.error("Error fetching CSV:", err);
+                document.getElementById('scheduleContainer').innerHTML = 
+                    '<div class="no-class">無法讀取資料，請檢查網路連線。</div>';
             }
         });
     }
 
-    function getCourseObjByDateAndPeriod(dateStr, period) {
-        try {
-            // 安全的日期轉換：將 YYYY-MM-DD 轉為日期物件
-            const parts = dateStr.split('-');
-            if (parts.length !== 3) return null;
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const day = parseInt(parts[2], 10);
-            const dateObj = new Date(year, month, day);
-            
-            const dayOfWeek = dateObj.getDay();
-            if (!timetable[dayOfWeek]) return null;
-            
-            // 比對節次 (轉為字串比較以確保安全)
-            const course = timetable[dayOfWeek].find(c => String(c.period) === String(period));
-            return course ? course : null;
-        } catch (e) {
-            console.warn("解析課程失敗:", dateStr, period, e);
-            return null;
-        }
+    // 將 (日期+節次) 轉換為 (班級) 的輔助函式
+    function getClassByDateAndPeriod(dateStr, period) {
+        // dateStr 格式預期為 2025-12-19
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj)) return null;
+
+        const dayOfWeek = dateObj.getDay(); // 0-6
+        if (!timetable[dayOfWeek]) return null;
+
+        // 比對節次 (CSV中的節次 vs 課表中的節次)
+        // 注意：CSV 的 period 可能是字串，要轉成數字比對
+        const course = timetable[dayOfWeek].find(c => c.period == period);
+        return course ? course.class : null;
     }
 
-    function processData() {
-        g_classRecords = {}; 
-        
-        g_csvData.forEach(row => {
+    function processAndRender(csvData) {
+        // 1. 整理 CSV 資料，將每一筆紀錄標上 "班級"
+        // 並且依班級分組，找出每個班級的最新紀錄
+        const classRecords = {}; 
+
+        csvData.forEach(row => {
+            // 對應您提供的 CSV 欄位名稱
             const date = row['日期']; 
             const period = row['節次']; 
             
             if (date && period) {
-                const courseObj = getCourseObjByDateAndPeriod(date, period);
+                // 自動推算這一筆紀錄是哪個班級的
+                const className = getClassByDateAndPeriod(date, period);
                 
-                if (courseObj) {
-                    const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
-                    // 簡單的日期字串比較 (YYYY-MM-DD 格式可以直接比大小)
-                    if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
-                        g_classRecords[uniqueKey] = row;
+                if (className) {
+                    // 如果這個班級還沒有紀錄，或這筆紀錄比目前的紀錄更新
+                    if (!classRecords[className] || date > classRecords[className]['日期']) {
+                        classRecords[className] = row;
                     }
                 }
             }
         });
+
+        renderSchedule(classRecords);
     }
 
-    function renderSchedule() {
-        try {
-            const container = document.getElementById('scheduleContainer');
-            const dateDisplay = document.getElementById('currentDateDisplay');
+    function renderSchedule(lastRecords) {
+        const container = document.getElementById('scheduleContainer');
+        container.innerHTML = '';
+
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD for form pre-fill
+
+        if (!timetable[dayOfWeek]) {
+            container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程，好好休息！</div>';
+            return;
+        }
+
+        const todaysClasses = timetable[dayOfWeek];
+
+        // 依節次從小到大排序
+        todaysClasses.sort((a, b) => a.period - b.period);
+
+        todaysClasses.forEach(course => {
+            const lastRecord = lastRecords[course.class];
             
-            // 更新日期顯示
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-            dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
+            // 修正處：這裡的連結會是 viewform?usp=pp_url&entry...，這是正確的格式
+            const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
-            container.innerHTML = '';
-
-            const dayOfWeek = g_currentDate.getDay();
+            const card = document.createElement('div');
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''}`;
             
-            // 取得 YYYY-MM-DD
-            const y = g_currentDate.getFullYear();
-            const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
-            const d = String(g_currentDate.getDate()).padStart(2, '0');
-            const dateStr = `${y}-${m}-${d}`;
-
-            if (!timetable[dayOfWeek]) {
-                container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
-                return;
-            }
-
-            const todaysClasses = timetable[dayOfWeek];
-            const sortedClasses = [...todaysClasses].sort((a, b) => a.period - b.period);
-
-            sortedClasses.forEach(course => {
-                const uniqueKey = `${course.class}_${course.subject}`;
-                const lastRecord = g_classRecords[uniqueKey];
-                
-                const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
-
-                const card = document.createElement('div');
-                card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''}`;
-                
-                let recordHtml = '';
-                if (lastRecord) {
-                    // 安全計算星期幾
-                    let dayChar = '';
-                    try {
-                        const rParts = lastRecord['日期'].split('-'); // YYYY-MM-DD
-                        const rDate = new Date(parseInt(rParts[0]), parseInt(rParts[1])-1, parseInt(rParts[2]));
-                        dayChar = weekMap[rDate.getDay()];
-                    } catch (e) {
-                        dayChar = '?';
-                    }
-                    
-                    recordHtml = `
-                        <div class="last-record">
-                            <h4>📅 上次進度 (${lastRecord['日期']} (${dayChar}) - 第 ${lastRecord['節次']} 節)</h4>
-                            <div class="record-item">
-                                <span class="record-label">進度：</span>
-                                <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
-                            </div>
-                            <div class="record-item">
-                                <span class="record-label">作業：</span>
-                                <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
-                            </div>
-                            <div class="record-item">
-                                <span class="record-label">提醒：</span>
-                                <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
-                            </div>
-                            ${lastRecord['平時測驗'] ? `
-                            <div class="record-item">
-                                <span class="record-label">測驗：</span>
-                                <span class="record-content">${lastRecord['平時測驗']}</span>
-                            </div>` : ''}
+            let recordHtml = '';
+            if (lastRecord) {
+                recordHtml = `
+                    <div class="last-record">
+                        <h4>📅 上次進度 (${lastRecord['日期']} - 第 ${lastRecord['節次']} 節)</h4>
+                        <div class="record-item">
+                            <span class="record-label">進度：</span>
+                            <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
                         </div>
-                    `;
-                } else {
-                    recordHtml = `
-                        <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
-                            尚無此課程 (${course.class}${course.subject}) 的過往紀錄
+                        <div class="record-item">
+                            <span class="record-label">作業：</span>
+                            <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
                         </div>
-                    `;
-                }
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="period-badge">第 ${course.period} 節</span>
-                        <span class="class-title">${course.class} 班 - ${course.subject}</span>
-                    </div>
-                    <div class="card-body">
-                        ${recordHtml}
-                        <a href="${formLink}" target="_blank" class="btn-add">
-                            ✏️ 填寫進度
-                        </a>
+                        <div class="record-item">
+                            <span class="record-label">提醒：</span>
+                            <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
+                        </div>
+                        ${lastRecord['平時測驗'] ? `
+                        <div class="record-item">
+                            <span class="record-label">測驗：</span>
+                            <span class="record-content">${lastRecord['平時測驗']}</span>
+                        </div>` : ''}
                     </div>
                 `;
-                container.appendChild(card);
-            });
-        } catch (error) {
-            console.error(error);
-            document.getElementById('scheduleContainer').innerHTML = 
-                `<div class="no-class" style="color:red;">程式執行錯誤：${error.message}</div>`;
-        }
+            } else {
+                recordHtml = `
+                    <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
+                        尚無此班級 (${course.class}) 的過往紀錄
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="period-badge">第 ${course.period} 節</span>
+                    <span class="class-title">${course.class} 班 - ${course.subject}</span>
+                </div>
+                <div class="card-body">
+                    ${recordHtml}
+                    <a href="${formLink}" target="_blank" class="btn-add">
+                        ✏️ 填寫本日進度
+                    </a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
     }
 </script>
 
