@@ -162,14 +162,14 @@
 
 <script>
     // ==========================================
-    // ★ 設定區 (已填入您的資料)
+    // ★ 設定區
     // ==========================================
     
     // 1. Google Sheet 發布的 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
 
-    // 2. 表單基礎網址
-    const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform';
+    // 2. 表單基礎網址 (修正重點：加入 ?usp=pp_url)
+    const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
     // 3. 表單欄位 ID (用於自動填寫日期與節次)
     const entryIds = {
@@ -177,7 +177,7 @@
         period: 'entry.1620291828'
     };
 
-    // 4. 課表資料庫 (根據 PDF 建立，用於反查班級)
+    // 4. 課表資料庫 (根據 PDF 建立)
     //    Key: 星期幾 (1-5), Value: 課程列表
     const timetable = {
         1: [
@@ -250,6 +250,7 @@
         if (!timetable[dayOfWeek]) return null;
 
         // 比對節次 (CSV中的節次 vs 課表中的節次)
+        // 注意：CSV 的 period 可能是字串，要轉成數字比對
         const course = timetable[dayOfWeek].find(c => c.period == period);
         return course ? course.class : null;
     }
@@ -301,7 +302,7 @@
         todaysClasses.forEach(course => {
             const lastRecord = lastRecords[course.class];
             
-            // 產生預填表單的連結
+            // 修正處：這裡的連結會是 viewform?usp=pp_url&entry...，這是正確的格式
             const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
             const card = document.createElement('div');
