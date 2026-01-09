@@ -86,20 +86,15 @@
             align-items: center;
             border-bottom: 1px solid #eee;
         }
-        /* ▼▼▼ 修改這裡 ▼▼▼ */
+        /* ▼▼▼ 修改後的樣式：加大節次圖示 ▼▼▼ */
         .period-badge {
             background-color: var(--primary-color);
             color: white;
-            /* 加大內距，讓徽章變大顆 */
-            padding: 10px 24px;
-            /* 加大圓角 */
-            border-radius: 30px;
-            /* 加大字體 */
-            font-size: 1.3rem;
+            padding: 10px 24px;       /* 加大內距 */
+            border-radius: 30px;      /* 更圓潤 */
+            font-size: 1.3rem;        /* 字體加大 */
             font-weight: bold;
-            /* 新增一點陰影，增加立體感 */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            /* 讓它垂直置中對齊旁邊的文字 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 增加陰影立體感 */
             display: inline-flex;
             align-items: center;
         }
@@ -253,7 +248,7 @@
 
     let g_currentDate = new Date();
     let g_csvData = []; 
-    let g_classRecords = {}; // 儲存紀錄的物件
+    let g_classRecords = {}; 
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
@@ -280,7 +275,6 @@
         });
     }
 
-    // 取得該日期與節次的「完整課程物件」(包含 Class 與 Subject)
     function getCourseObjByDateAndPeriod(dateStr, period) {
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj)) return null;
@@ -288,12 +282,10 @@
         const dayOfWeek = dateObj.getDay();
         if (!timetable[dayOfWeek]) return null;
         
-        // 找到對應的課程
         const course = timetable[dayOfWeek].find(c => c.period == period);
         return course ? course : null;
     }
 
-    // 處理資料：這次的 Key 改為「班級_科目」
     function processData() {
         g_classRecords = {}; 
         
@@ -302,14 +294,11 @@
             const period = row['節次']; 
             
             if (date && period) {
-                // 1. 根據日期與節次，反查出這堂課是「哪一班」且是「什麼科目」
                 const courseObj = getCourseObjByDateAndPeriod(date, period);
                 
                 if (courseObj) {
-                    // 2. 建立唯一的 Key：例如 "109_國語文" 或 "109_閱讀指導"
                     const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
                     
-                    // 3. 找出該科目最新的紀錄
                     if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
                         g_classRecords[uniqueKey] = row;
                     }
@@ -322,7 +311,6 @@
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
         
-        // 更新日期顯示
         const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
         dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
 
@@ -330,7 +318,6 @@
 
         const dayOfWeek = g_currentDate.getDay();
         
-        // 取得 YYYY-MM-DD
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
@@ -345,7 +332,6 @@
         const sortedClasses = [...todaysClasses].sort((a, b) => a.period - b.period);
 
         sortedClasses.forEach(course => {
-            // 讀取紀錄時，同樣使用「班級_科目」來當作 Key 尋找
             const uniqueKey = `${course.class}_${course.subject}`;
             const lastRecord = g_classRecords[uniqueKey];
             
@@ -356,14 +342,18 @@
             
             let recordHtml = '';
             if (lastRecord) {
-                // ★★★ 這裡新增計算星期的邏輯 ★★★
+                // ★★★ 日期與星期處理區 ★★★
                 const recordDateObj = new Date(lastRecord['日期']);
                 const days = ['日', '一', '二', '三', '四', '五', '六'];
                 const weekStr = days[recordDateObj.getDay()]; // 取得中文星期
+                
+                // 製作簡短日期 (例如 1/9)
+                const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
 
+                // ★★★ 確保這裡使用反引號 ` ★★★
                 recordHtml = `
                     <div class="last-record">
-                        <h4>📅 上次進度 (${lastRecord['日期']} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+                        <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
                         <div class="record-item">
                             <span class="record-label">進度：</span>
                             <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
