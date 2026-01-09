@@ -1,1 +1,402 @@
-<h4>📅 上次進度 (${lastRecord['日期']} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>張老師教學進度看板</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --text-sub: #666;
+            --accent-color: #d84315;
+        }
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .date-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 15px;
+            user-select: none;
+        }
+        .nav-btn {
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+        .date-display {
+            font-size: 1.4rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .class-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            overflow: hidden;
+            border-left: 6px solid var(--primary-color);
+            transition: transform 0.2s;
+        }
+        .class-card:hover {
+            transform: translateY(-2px);
+        }
+        .card-header {
+            background-color: #eef2f7;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+        }
+        .period-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .class-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .last-record {
+            background-color: #fff8e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            border: 1px solid #ffe0b2;
+        }
+        .last-record h4 {
+            margin: 0 0 12px 0;
+            color: var(--accent-color);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px dashed #ffcc80;
+            padding-bottom: 8px;
+        }
+        .record-item {
+            margin-bottom: 8px;
+            line-height: 1.6;
+            display: flex;
+        }
+        .record-label {
+            font-weight: bold;
+            color: var(--text-sub);
+            min-width: 50px;
+            flex-shrink: 0;
+        }
+        .record-content {
+            word-break: break-word;
+        }
+        .btn-add {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 14px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            transition: background 0.3s;
+        }
+        .btn-add:hover {
+            background-color: #36527a;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-sub);
+            font-size: 1.1rem;
+        }
+        .no-class {
+            text-align: center;
+            padding: 50px;
+            background: white;
+            border-radius: 12px;
+            color: var(--text-sub);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .type-reading {
+            border-left-color: #2e7d32;
+        }
+        .type-reading .period-badge {
+            background-color: #2e7d32;
+        }
+        .type-reading .btn-add {
+            background-color: #2e7d32;
+        }
+        .type-reading .btn-add:hover {
+            background-color: #1b5e20;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>張老師教學進度看板</h1>
+    
+    <div class="date-controls">
+        <button class="nav-btn" onclick="changeDate(-1)">◀</button>
+        <div class="date-display" id="currentDateDisplay"></div>
+        <button class="nav-btn" onclick="changeDate(1)">▶</button>
+    </div>
+</div>
+
+<div class="container" id="scheduleContainer">
+    <div class="loading">
+        <p>⏳ 正在載入課表與雲端進度...</p>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ★ 設定區
+    // ==========================================
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
+    const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
+    
+    const entryIds = {
+        date: 'entry.1279670059',
+        period: 'entry.1620291828'
+    };
+
+    const timetable = {
+        1: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 2, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' }
+        ],
+        2: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 3, class: '109', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '116', subject: '閱讀指導' }
+        ],
+        3: [
+            { period: 2, class: '109', subject: '國語文' },
+            { period: 3, class: '116', subject: '國語文' },
+            { period: 7, class: '117', subject: '國語文' }
+        ],
+        4: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 3, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' },
+            { period: 6, class: '109', subject: '閱讀指導' }
+        ],
+        5: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '109', subject: '國語文' }
+        ]
+    };
+
+    // ==========================================
+    // ★ 程式邏輯區
+    // ==========================================
+
+    let g_currentDate = new Date();
+    let g_csvData = []; 
+    let g_classRecords = {}; // 儲存紀錄的物件
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+    });
+
+    function changeDate(days) {
+        g_currentDate.setDate(g_currentDate.getDate() + days);
+        renderSchedule();
+    }
+
+    function fetchData() {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                g_csvData = results.data;
+                processData();
+                renderSchedule();
+            },
+            error: function(err) {
+                console.error("Error:", err);
+                document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">無法讀取資料。</div>';
+            }
+        });
+    }
+
+    // 取得該日期與節次的「完整課程物件」(包含 Class 與 Subject)
+    function getCourseObjByDateAndPeriod(dateStr, period) {
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj)) return null;
+        
+        const dayOfWeek = dateObj.getDay();
+        if (!timetable[dayOfWeek]) return null;
+        
+        // 找到對應的課程
+        const course = timetable[dayOfWeek].find(c => c.period == period);
+        return course ? course : null;
+    }
+
+    // 處理資料：這次的 Key 改為「班級_科目」
+    function processData() {
+        g_classRecords = {}; 
+        
+        g_csvData.forEach(row => {
+            const date = row['日期']; 
+            const period = row['節次']; 
+            
+            if (date && period) {
+                // 1. 根據日期與節次，反查出這堂課是「哪一班」且是「什麼科目」
+                const courseObj = getCourseObjByDateAndPeriod(date, period);
+                
+                if (courseObj) {
+                    // 2. 建立唯一的 Key：例如 "109_國語文" 或 "109_閱讀指導"
+                    const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
+                    
+                    // 3. 找出該科目最新的紀錄
+                    if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
+                        g_classRecords[uniqueKey] = row;
+                    }
+                }
+            }
+        });
+    }
+
+    function renderSchedule() {
+        const container = document.getElementById('scheduleContainer');
+        const dateDisplay = document.getElementById('currentDateDisplay');
+        
+        // 更新日期顯示
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
+
+        container.innerHTML = '';
+
+        const dayOfWeek = g_currentDate.getDay();
+        
+        // 取得 YYYY-MM-DD
+        const y = g_currentDate.getFullYear();
+        const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
+        const d = String(g_currentDate.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+
+        if (!timetable[dayOfWeek]) {
+            container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
+            return;
+        }
+
+        const todaysClasses = timetable[dayOfWeek];
+        const sortedClasses = [...todaysClasses].sort((a, b) => a.period - b.period);
+
+        sortedClasses.forEach(course => {
+            // 讀取紀錄時，同樣使用「班級_科目」來當作 Key 尋找
+            const uniqueKey = `${course.class}_${course.subject}`;
+            const lastRecord = g_classRecords[uniqueKey];
+            
+            const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
+
+            const card = document.createElement('div');
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''}`;
+            
+            let recordHtml = '';
+            if (lastRecord) {
+                // ★★★ 這裡新增計算星期的邏輯 ★★★
+                const recordDateObj = new Date(lastRecord['日期']);
+                const days = ['日', '一', '二', '三', '四', '五', '六'];
+                const weekStr = days[recordDateObj.getDay()]; // 取得中文星期
+
+                recordHtml = `
+                    <div class="last-record">
+                        <h4>📅 上次進度 (${lastRecord['日期']} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+                        <div class="record-item">
+                            <span class="record-label">進度：</span>
+                            <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">作業：</span>
+                            <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">提醒：</span>
+                            <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
+                        </div>
+                        ${lastRecord['平時測驗'] ? `
+                        <div class="record-item">
+                            <span class="record-label">測驗：</span>
+                            <span class="record-content">${lastRecord['平時測驗']}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+            } else {
+                recordHtml = `
+                    <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
+                        尚無此課程 (${course.class}${course.subject}) 的過往紀錄
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="period-badge">第 ${course.period} 節</span>
+                    <span class="class-title">${course.class} 班 - ${course.subject}</span>
+                </div>
+                <div class="card-body">
+                    ${recordHtml}
+                    <a href="${formLink}" target="_blank" class="btn-add">
+                        ✏️ 填寫進度
+                    </a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>
