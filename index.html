@@ -86,14 +86,24 @@
             align-items: center;
             border-bottom: 1px solid #eee;
         }
+        /* ▼▼▼ 修改這裡 ▼▼▼ */
         .period-badge {
             background-color: var(--primary-color);
             color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.9rem;
+            /* 加大內距，讓徽章變大顆 */
+            padding: 10px 24px;
+            /* 加大圓角 */
+            border-radius: 30px;
+            /* 加大字體 */
+            font-size: 1.3rem;
             font-weight: bold;
+            /* 新增一點陰影，增加立體感 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            /* 讓它垂直置中對齊旁邊的文字 */
+            display: inline-flex;
+            align-items: center;
         }
+        /* ▲▲▲ 修改結束 ▲▲▲ */
         .class-title {
             font-size: 1.25rem;
             font-weight: bold;
