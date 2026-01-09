@@ -5,187 +5,271 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>張老師教學進度看板</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #4a6fa5;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-            --text-main: #333;
-            --text-sub: #666;
-            --accent-color: #d84315;
+            /* --- 文青配色盤 --- */
+            --bg-color: #f9f7f2;       /* 米白紙張色 */
+            --card-bg: #ffffff;        /* 純白卡片 */
+            --primary-color: #5d7583;  /* 莫蘭迪藍灰 (墨色感) */
+            --text-main: #3e3e3e;      /* 深灰黑 (不要純黑) */
+            --text-sub: #7a7a7a;       /* 淺灰 */
+            --accent-color: #a65e5e;   /* 乾燥玫瑰/陶土紅 */
+            --highlight-bg: #f4f4ef;   /* 淺米灰裝飾區塊 */
+            --line-color: #e0ded9;     /* 柔和的分隔線 */
+            
+            /* 閱讀指導課的特殊色 (抹茶綠) */
+            --reading-color: #6a8c6d; 
         }
+
         body {
-            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            /* 改用思源宋體，書卷氣瞬間提升 */
+            font-family: "Noto Serif TC", "Songti TC", serif;
             background-color: var(--bg-color);
             margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
             color: var(--text-main);
+            background-image: radial-gradient(#e8e6e1 1px, transparent 1px);
+            background-size: 20px 20px; /* 增加一點點紙張顆粒感 */
         }
+
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            position: relative;
         }
+
+        .header h1 {
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
         .date-controls {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
-            margin-top: 15px;
+            gap: 25px;
+            margin-top: 25px;
             user-select: none;
         }
+
         .nav-btn {
-            background-color: white;
-            border: 2px solid var(--primary-color);
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
             color: var(--primary-color);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 1.2rem;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%; /* 圓形 */
+            font-size: 1rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
+
         .nav-btn:hover {
             background-color: var(--primary-color);
-            color: white;
+            color: #fff;
+            transform: translateY(-2px);
         }
-        .nav-btn:active {
-            transform: scale(0.95);
-        }
+
         .date-display {
-            font-size: 1.4rem;
-            color: var(--primary-color);
-            font-weight: bold;
-            min-width: 200px;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            font-weight: 600;
+            min-width: 220px;
             text-align: center;
+            letter-spacing: 0.05em;
         }
         
         .container {
-            max-width: 800px;
+            max-width: 750px;
             margin: 0 auto;
         }
+
+        /* 卡片設計：簡約、留白、柔和陰影 */
         .class-card {
             background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
+            border-radius: 8px; /* 圓角改小一點，比較俐落 */
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.06); /* 很淡的柔和陰影 */
+            margin-bottom: 30px;
             overflow: hidden;
-            border-left: 6px solid var(--primary-color);
-            transition: transform 0.2s;
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
         }
+
         .class-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px -10px rgba(0,0,0,0.1);
         }
+
+        /* 頂部裝飾條，取代原本左邊的粗線 */
+        .class-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--primary-color);
+            opacity: 0.7;
+        }
+
         .card-header {
-            background-color: #eef2f7;
-            padding: 15px 20px;
+            padding: 25px 30px 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #eee;
+            background-color: #fff;
         }
-        /* ▼▼▼ 修改後的樣式：加大節次圖示 ▼▼▼ */
+
+        /* --- 節次徽章 (文青版) --- */
         .period-badge {
             background-color: var(--primary-color);
-            color: white;
-            padding: 10px 24px;       /* 加大內距 */
-            border-radius: 30px;      /* 更圓潤 */
-            font-size: 1.3rem;        /* 字體加大 */
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 增加陰影立體感 */
+            color: #fff;
+            padding: 8px 24px;       
+            border-radius: 50px;     
+            font-size: 1.25rem;       
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 10px rgba(93, 117, 131, 0.3); /* 配合主色的陰影 */
             display: inline-flex;
             align-items: center;
         }
-        /* ▲▲▲ 修改結束 ▲▲▲ */
+
         .class-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #2c3e50;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.05em;
         }
+
         .card-body {
-            padding: 20px;
+            padding: 0 30px 30px 30px;
         }
+
+        /* 紀錄區塊：模仿筆記本或便條紙 */
         .last-record {
-            background-color: #fff8e1;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-            border: 1px solid #ffe0b2;
-        }
-        .last-record h4 {
-            margin: 0 0 12px 0;
-            color: var(--accent-color);
+            background-color: var(--highlight-bg);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 25px;
             font-size: 1rem;
+            /* 虛線邊框，像剪貼簿 */
+            border: 1px dashed var(--line-color); 
+            position: relative;
+        }
+
+        .last-record h4 {
+            margin: 0 0 15px 0;
+            color: var(--accent-color);
+            font-size: 1.05rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            border-bottom: 1px dashed #ffcc80;
             padding-bottom: 8px;
+            border-bottom: 1px solid var(--line-color);
         }
+
         .record-item {
-            margin-bottom: 8px;
-            line-height: 1.6;
+            margin-bottom: 10px;
+            line-height: 1.8; /* 行距加大，閱讀更舒服 */
             display: flex;
+            align-items: baseline;
         }
+
         .record-label {
-            font-weight: bold;
+            font-weight: 600;
             color: var(--text-sub);
-            min-width: 50px;
+            min-width: 55px;
             flex-shrink: 0;
+            font-size: 0.95rem;
         }
+
         .record-content {
+            color: var(--text-main);
             word-break: break-word;
         }
+
+        /* 按鈕：極簡風格 */
         .btn-add {
             display: block;
             width: 100%;
             text-align: center;
-            background-color: var(--primary-color);
-            color: white;
-            padding: 14px;
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 12px;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
+            border-radius: 4px;
+            font-weight: 600;
             font-size: 1.05rem;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            letter-spacing: 0.1em;
         }
+
         .btn-add:hover {
-            background-color: #36527a;
+            background-color: var(--primary-color);
+            color: #fff;
         }
+
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 60px;
             color: var(--text-sub);
             font-size: 1.1rem;
+            letter-spacing: 0.1em;
         }
+
         .no-class {
             text-align: center;
-            padding: 50px;
-            background: white;
-            border-radius: 12px;
+            padding: 60px;
+            background: var(--card-bg);
+            border-radius: 8px;
             color: var(--text-sub);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 1px dashed var(--line-color);
+            letter-spacing: 0.1em;
         }
-        .type-reading {
-            border-left-color: #2e7d32;
-        }
+
+        /* --- 閱讀指導課的特殊樣式 (抹茶綠) --- */
         .type-reading .period-badge {
-            background-color: #2e7d32;
+            background-color: var(--reading-color);
+            box-shadow: 0 4px 10px rgba(106, 140, 109, 0.3);
+        }
+        .type-reading::before {
+            background-color: var(--reading-color);
         }
         .type-reading .btn-add {
-            background-color: #2e7d32;
+            color: var(--reading-color);
+            border-color: var(--reading-color);
         }
         .type-reading .btn-add:hover {
-            background-color: #1b5e20;
+            background-color: var(--reading-color);
+            color: white;
+        }
+        
+        /* 手機版微調 */
+        @media (max-width: 600px) {
+            body { padding: 20px 10px; }
+            .card-header { padding: 20px; flex-direction: column; gap: 15px; align-items: flex-start; }
+            .period-badge { font-size: 1.1rem; padding: 6px 20px; }
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>張老師教學進度看板</h1>
+    <h1>教學進度．日誌</h1>
     
     <div class="date-controls">
         <button class="nav-btn" onclick="changeDate(-1)">◀</button>
@@ -196,7 +280,7 @@
 
 <div class="container" id="scheduleContainer">
     <div class="loading">
-        <p>⏳ 正在載入課表與雲端進度...</p>
+        <p>正在展卷讀取中...</p>
     </div>
 </div>
 
@@ -298,7 +382,6 @@
                 
                 if (courseObj) {
                     const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
-                    
                     if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
                         g_classRecords[uniqueKey] = row;
                     }
@@ -324,7 +407,7 @@
         const dateStr = `${y}-${m}-${d}`;
 
         if (!timetable[dayOfWeek]) {
-            container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
+            container.innerHTML = '<div class="no-class">☕ 本日無課，宜閱讀、宜沈澱。</div>';
             return;
         }
 
@@ -342,41 +425,38 @@
             
             let recordHtml = '';
             if (lastRecord) {
-                // ★★★ 日期與星期處理區 ★★★
                 const recordDateObj = new Date(lastRecord['日期']);
                 const days = ['日', '一', '二', '三', '四', '五', '六'];
-                const weekStr = days[recordDateObj.getDay()]; // 取得中文星期
+                const weekStr = days[recordDateObj.getDay()]; 
                 
-                // 製作簡短日期 (例如 1/9)
                 const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
 
-                // ★★★ 確保這裡使用反引號 ` ★★★
                 recordHtml = `
                     <div class="last-record">
-                        <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+                        <h4>🔖 上次紀錄 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
                         <div class="record-item">
-                            <span class="record-label">進度：</span>
+                            <span class="record-label">進度</span>
                             <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
                         </div>
                         <div class="record-item">
-                            <span class="record-label">作業：</span>
+                            <span class="record-label">作業</span>
                             <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
                         </div>
                         <div class="record-item">
-                            <span class="record-label">提醒：</span>
+                            <span class="record-label">提醒</span>
                             <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
                         </div>
                         ${lastRecord['平時測驗'] ? `
                         <div class="record-item">
-                            <span class="record-label">測驗：</span>
+                            <span class="record-label">測驗</span>
                             <span class="record-content">${lastRecord['平時測驗']}</span>
                         </div>` : ''}
                     </div>
                 `;
             } else {
                 recordHtml = `
-                    <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
-                        尚無此課程 (${course.class}${course.subject}) 的過往紀錄
+                    <div class="last-record" style="background-color: transparent; border: 1px dashed #ccc; color: #999;">
+                        尚無此課程 (${course.class}${course.subject}) 的過往篇章
                     </div>
                 `;
             }
@@ -384,12 +464,12 @@
             card.innerHTML = `
                 <div class="card-header">
                     <span class="period-badge">第 ${course.period} 節</span>
-                    <span class="class-title">${course.class} 班 - ${course.subject}</span>
+                    <span class="class-title">${course.class} 班 ‧ ${course.subject}</span>
                 </div>
                 <div class="card-body">
                     ${recordHtml}
                     <a href="${formLink}" target="_blank" class="btn-add">
-                        ✏️ 填寫進度
+                        ✍️ 填寫進度
                     </a>
                 </div>
             `;
