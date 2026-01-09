@@ -12,7 +12,7 @@
             --card-bg: #ffffff;
             --text-main: #333;
             --text-sub: #666;
-            --accent-color: #d84315;
+            --accent-color: #d84315; /* 這裡的顏色會用於上課中的提示 */
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -73,11 +73,19 @@
             margin-bottom: 25px;
             overflow: hidden;
             border-left: 6px solid var(--primary-color);
-            transition: transform 0.2s;
+            transition: transform 0.2s, border-color 0.3s; /* 增加邊框轉場 */
         }
         .class-card:hover {
             transform: translateY(-2px);
         }
+        
+        /* ▼▼▼ 新增：當這節課正在上課時的卡片樣式 ▼▼▼ */
+        .class-card.active-now {
+            border-left-color: var(--accent-color); /* 左側邊框變色 */
+            box-shadow: 0 6px 15px rgba(216, 67, 21, 0.15); /* 增加一點暖色陰影 */
+        }
+        /* ▲▲▲ 新增結束 ▲▲▲ */
+
         .card-header {
             background-color: #eef2f7;
             padding: 15px 20px;
@@ -86,19 +94,56 @@
             align-items: center;
             border-bottom: 1px solid #eee;
         }
-        /* ▼▼▼ 修改後的樣式：加大節次圖示 ▼▼▼ */
+
+        /* ▼▼▼ 新增：用於對齊左側元素(節次+提示)的容器 ▼▼▼ */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 元素之間的間距 */
+            flex-wrap: wrap; /* 在小螢幕允許換行 */
+        }
+
         .period-badge {
             background-color: var(--primary-color);
             color: white;
-            padding: 10px 24px;       /* 加大內距 */
-            border-radius: 30px;      /* 更圓潤 */
-            font-size: 1.3rem;        /* 字體加大 */
+            padding: 10px 24px;       
+            border-radius: 30px;      
+            font-size: 1.3rem;        
             font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 增加陰影立體感 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
             display: inline-flex;
             align-items: center;
+            flex-shrink: 0; /* 防止圖示被擠壓 */
         }
-        /* ▲▲▲ 修改結束 ▲▲▲ */
+
+        /* ▼▼▼ 新增：跳動動畫定義 ▼▼▼ */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* ▼▼▼ 新增：「上課中」文字與柴犬的樣式 ▼▼▼ */
+        .live-indicator-group {
+            display: inline-flex;
+            align-items: center;
+            /* 套用跳動動畫 */
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+
+        .live-text {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1rem;
+            white-space: nowrap; /* 防止文字換行 */
+        }
+
+        .running-shiba {
+            height: 40px; /* 設定柴犬GIF的高度 */
+            width: auto;
+            margin-left: 5px;
+        }
+        /* ▲▲▲ 新增結束 ▲▲▲ */
+
         .class-title {
             font-size: 1.25rem;
             font-weight: bold;
@@ -154,6 +199,14 @@
         .btn-add:hover {
             background-color: #36527a;
         }
+        /* 上課中按鈕變色提示 */
+        .active-now .btn-add {
+             background-color: var(--accent-color);
+        }
+        .active-now .btn-add:hover {
+             background-color: #bf360c;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -174,11 +227,28 @@
         .type-reading .period-badge {
             background-color: #2e7d32;
         }
+        /* 如果閱讀課正在上課，保持閱讀課的綠色風格，或者您可以註解掉下面這行讓它變紅 */
+        .type-reading.active-now {
+            border-left-color: #2e7d32;
+        }
         .type-reading .btn-add {
             background-color: #2e7d32;
         }
         .type-reading .btn-add:hover {
             background-color: #1b5e20;
+        }
+        
+        /* 手機版微調 */
+        @media (max-width: 600px) {
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .class-title {
+                align-self: flex-end; /* 手機版時，班級名稱靠右對齊 */
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
@@ -210,6 +280,18 @@
     const entryIds = {
         date: 'entry.1279670059',
         period: 'entry.1620291828'
+    };
+
+    // ★★★ 重要：請在此設定貴校的上課時間表 (24小時制 HH:MM) ★★★
+    const periodTimes = {
+        1: { start: '08:15', end: '09:05' },
+        2: { start: '09:15', end: '10:00' },
+        3: { start: '10:10', end: '10:55' },
+        4: { start: '11:05', end: '11:50' },
+        5: { start: '13:30', end: '14:15' },
+        6: { start: '14:25', end: '15:10' },
+        7: { start: '15:20', end: '16:05' },
+        8: { start: '16:15', end: '17:00' } 
     };
 
     const timetable = {
@@ -249,6 +331,8 @@
     let g_currentDate = new Date();
     let g_csvData = []; 
     let g_classRecords = {}; 
+    // 赤柴 GIF 的連結 (使用網路上的免費資源)
+    const shibaGifUrl = 'https://i.imgur.com/8KJ7I40.gif';
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
@@ -307,6 +391,29 @@
         });
     }
 
+    // ★★★ 新增：判斷現在是否為某一節課的時間 ★★★
+    function checkIsCurrentPeriod(period) {
+        const now = new Date();
+        // 檢查看板顯示的日期是否為「今天」
+        const isToday = g_currentDate.toDateString() === now.toDateString();
+        if (!isToday) return false;
+
+        if (!periodTimes[period]) return false;
+
+        // 取得當前時間的 HH:MM 數值
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // 解析開始時間
+        const [startH, startM] = periodTimes[period].start.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+
+        // 解析結束時間
+        const [endH, endM] = periodTimes[period].end.split(':').map(Number);
+        const endMinutes = endH * 60 + endM;
+
+        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    }
+
     function renderSchedule() {
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
@@ -334,23 +441,25 @@
         sortedClasses.forEach(course => {
             const uniqueKey = `${course.class}_${course.subject}`;
             const lastRecord = g_classRecords[uniqueKey];
-            
             const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
+            // ★★★ 判斷這張卡片是否正在上課中 ★★★
+            const isLive = checkIsCurrentPeriod(course.period);
+            // 如果是上課中，加入 'active-now' 這個 CSS class
+            const activeClass = isLive ? 'active-now' : '';
+
             const card = document.createElement('div');
-            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''}`;
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${activeClass}`;
             
             let recordHtml = '';
             if (lastRecord) {
-                // ★★★ 日期與星期處理區 ★★★
+                // 日期與星期處理區
                 const recordDateObj = new Date(lastRecord['日期']);
                 const days = ['日', '一', '二', '三', '四', '五', '六'];
-                const weekStr = days[recordDateObj.getDay()]; // 取得中文星期
-                
-                // 製作簡短日期 (例如 1/9)
+                const weekStr = days[recordDateObj.getDay()]; 
                 const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
 
-                // ★★★ 確保這裡使用反引號 ` ★★★
+                // 確保這裡使用反引號 `
                 recordHtml = `
                     <div class="last-record">
                         <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
@@ -381,15 +490,24 @@
                 `;
             }
 
+            // ★★★ 構建 HTML 結構，加入上課中提示與柴犬 ★★★
             card.innerHTML = `
                 <div class="card-header">
-                    <span class="period-badge">第 ${course.period} 節</span>
+                    <div class="header-left">
+                        <span class="period-badge">第 ${course.period} 節</span>
+                        ${isLive ? `
+                            <div class="live-indicator-group">
+                                <span class="live-text">✨ 上課中</span>
+                                <img src="${shibaGifUrl}" alt="Running Shiba" class="running-shiba">
+                            </div>
+                        ` : ''}
+                    </div>
                     <span class="class-title">${course.class} 班 - ${course.subject}</span>
                 </div>
                 <div class="card-body">
                     ${recordHtml}
                     <a href="${formLink}" target="_blank" class="btn-add">
-                        ✏️ 填寫進度
+                        ${isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度'}
                     </a>
                 </div>
             `;
