@@ -3,212 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國文科教學進度登記系統</title>
+    <title>國文科教學進度登記</title>
     <style>
-        /* --- 1. 整體版面設定 --- */
         body {
-            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            font-family: "Microsoft JhengHei", sans-serif;
             background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
             display: flex;
             justify-content: center;
+            padding-top: 50px;
         }
 
-        .container {
+        .card {
             background-color: white;
-            width: 100%;
-            max-width: 600px; /* 手機電腦都適用的寬度 */
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 1.5rem;
-        }
-
-        .date-display {
-            text-align: center;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        /* --- 2. 按鈕區域設定 --- */
-        .action-area {
-            text-align: center;
-            padding: 20px;
-            border: 2px dashed #bdc3c7;
-            border-radius: 10px;
-            background-color: #fbfbfb;
-        }
-
-        /* 前往填寫的按鈕樣式 */
-        .btn-fill {
-            display: inline-block;
-            background-color: #3498db;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: transform 0.2s, background-color 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-fill:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-
-        .btn-fill:active {
-            transform: translateY(0);
-        }
-
-        /* --- 3. 狀態標籤 (重點功能) --- */
-        #update-badge {
-            display: none; /* 預設隱藏 */
-            margin-top: 15px;
-            background-color: #28a745; /* 成功綠 */
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        /* 標籤彈出的動畫 */
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* --- 4. 測試用的小工具 (右下角) --- */
-        .debug-tools {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #aaa;
-        }
-        .btn-reset {
-            background: none;
-            border: 1px solid #ccc;
-            color: #999;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .btn-reset:hover {
-            background: #eee;
+        h2 {
+            margin-top: 0;
             color: #333;
+            text-align: center;
+        }
+
+        .date-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        /* 按鈕樣式 */
+        .btn-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 0;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            margin-bottom: 20px; /* 按鈕跟下方文字的距離 */
+            transition: background 0.2s;
+        }
+
+        .btn-link:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- 重點修改區域：上次進度顯示區 --- */
+        .status-row {
+            font-size: 1rem;
+            color: #333;
+            padding: 10px;
+            background-color: #f8f9fa; /* 淺灰底色讓它像個欄位 */
+            border-radius: 5px;
+            border-left: 4px solid #ddd; /* 預設灰邊 */
+        }
+
+        /* 當更新後的樣式 (透過 JS 加入這個 class) */
+        .status-row.updated {
+            border-left-color: #28a745; /* 變綠邊 */
+            background-color: #e8f5e9;  /* 變淺綠底 */
+        }
+
+        /* 進度文字的樣式 */
+        #progress-text {
+            font-weight: bold;
+            color: #999; /* 預設灰色 */
+            margin-left: 5px;
         }
 
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>📝 國文科教學進度登記</h1>
-        <div class="date-display" id="current-date">載入日期中...</div>
+    <div class="card">
+        <h2>📝 國文科教學進度</h2>
+        <div class="date-info" id="today-date">--/--/--</div>
 
-        <div class="action-area">
-            <a href="https://docs.google.com/forms/u/0/" 
-               target="_blank" 
-               class="btn-fill" 
-               onclick="markAsUpdated()">
-               👉 前往填寫今日進度
-            </a>
-            
-            <br>
+        <a href="https://docs.google.com/forms/u/0/" 
+           target="_blank" 
+           class="btn-link"
+           onclick="updateProgress()">
+           👉 點此填寫今日進度
+        </a>
 
-            <div id="update-badge">
-                ✅ 已更新當天進度
-            </div>
+        <div class="status-row" id="status-box">
+            上次進度：<span id="progress-text">尚無今日紀錄</span>
         </div>
 
-        <div class="debug-tools">
-            <p>測試用工具（實際使用時可忽略）：</p>
-            <button class="btn-reset" onclick="resetStatus()">🔄 清除今日紀錄 (重置狀態)</button>
+        <div style="margin-top: 30px; text-align: right;">
+            <button onclick="clearRecord()" style="background:none; border:none; color:#ccc; font-size:0.8rem; cursor:pointer;">重置測試</button>
         </div>
     </div>
 
     <script>
-        // --- 設定 ---
-        // 這是一個鑰匙，用來在瀏覽器裡存取資料
-        const STORAGE_KEY = 'teacher_chinese_progress_update_v1';
+        const STORAGE_KEY = 'teacher_schedule_v2'; // 儲存用的代號
 
-        // --- 主程式 ---
-        
-        // 1. 當網頁載入完成時
+        // 1. 網頁開啟時執行
         document.addEventListener('DOMContentLoaded', function() {
-            showCurrentDate();
-            checkIfUpdatedToday();
+            // 顯示日期
+            const d = new Date();
+            const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+            document.getElementById('today-date').innerText = dateStr;
+
+            // 檢查狀態
+            checkStatus();
         });
 
-        // 2. 顯示今天的日期
-        function showCurrentDate() {
-            const today = new Date();
-            const dateStr = today.toLocaleDateString('zh-TW', {
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric', 
-                weekday: 'long'
-            });
-            document.getElementById('current-date').innerText = dateStr;
+        // 2. 按下按鈕執行的動作
+        function updateProgress() {
+            const today = getTodayStr();
+            localStorage.setItem(STORAGE_KEY, today); // 記住今天已做
+            
+            renderUpdatedState(); // 改變畫面文字
         }
 
-        // 3. 按下按鈕時觸發的功能
-        function markAsUpdated() {
-            const todayStr = getTodayString();
-            
-            // 將今天的日期存入瀏覽器記憶體
-            localStorage.setItem(STORAGE_KEY, todayStr);
-            
-            // 顯示綠色標籤
-            document.getElementById('update-badge').style.display = 'inline-block';
-            
-            // (選擇性) 可以在這裡加一行 console.log 確認
-            console.log('進度已標記為：' + todayStr);
-        }
+        // 3. 檢查是不是今天做的
+        function checkStatus() {
+            const lastDate = localStorage.getItem(STORAGE_KEY);
+            const today = getTodayStr();
 
-        // 4. 檢查今天是否已經按過
-        function checkIfUpdatedToday() {
-            const lastRecord = localStorage.getItem(STORAGE_KEY);
-            const todayStr = getTodayString();
-
-            if (lastRecord === todayStr) {
-                // 如果紀錄的日期跟今天一樣，顯示標籤
-                document.getElementById('update-badge').style.display = 'inline-block';
-            } else {
-                // 如果不一樣（代表是舊的紀錄），隱藏標籤
-                document.getElementById('update-badge').style.display = 'none';
+            if (lastDate === today) {
+                renderUpdatedState();
             }
         }
 
-        // 5. 測試用：重置狀態
-        function resetStatus() {
-            localStorage.removeItem(STORAGE_KEY);
-            document.getElementById('update-badge').style.display = 'none';
-            alert('紀錄已清除，您可以重新測試標籤出現的效果。');
+        // 4. 改變畫面文字的核心函式
+        function renderUpdatedState() {
+            const textBox = document.getElementById('progress-text');
+            const box = document.getElementById('status-box');
+
+            // 直接修改文字內容
+            textBox.innerHTML = '✅ 已更新當天進度';
+            textBox.style.color = '#28a745'; // 變成綠色
+
+            // 讓外框也變色
+            box.classList.add('updated');
         }
 
-        // --- 輔助工具 ---
-        // 取得 YYYY-MM-DD 格式的字串，確保比對準確
-        function getTodayString() {
+        // 5. 取得日期字串 YYYY-MM-DD
+        function getTodayStr() {
             const d = new Date();
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        }
+
+        // 測試用：清除紀錄
+        function clearRecord() {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload(); // 重新整理網頁
         }
     </script>
+
 </body>
 </html>
