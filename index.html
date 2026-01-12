@@ -16,11 +16,33 @@
             align-items: center;
         }
 
+        /* --- 頂部標題與日期 --- */
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+        }
+
+        .date-display {
+            color: #7f8c8d;
+            font-size: 1rem;
+            background-color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: inline-block;
+        }
+
         /* --- 卡片樣式 --- */
         .class-card {
             background-color: white;
             width: 100%;
-            max-width: 700px;
+            max-width: 700px; /* 卡片寬度 */
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             overflow: hidden;
@@ -29,7 +51,7 @@
             position: relative;
         }
 
-        /* 標題區 */
+        /* 卡片標題區 */
         .card-header {
             padding: 15px 20px;
             display: flex;
@@ -49,12 +71,12 @@
         }
 
         .class-title {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #333;
         }
 
-        /* 內容區 */
+        /* 卡片內容區 */
         .content-area {
             padding: 20px;
         }
@@ -98,7 +120,7 @@
             border-top: 1px solid #eee;
         }
 
-        /* 按鈕樣式 (預設藍色) */
+        /* 預設藍色按鈕 */
         .btn-submit {
             display: block;
             width: 100%;
@@ -120,7 +142,7 @@
             transform: translateY(-2px);
         }
         
-        /* 綠色按鈕樣式 (已更新狀態) */
+        /* 綠色按鈕樣式 (已更新) */
         .btn-submit.updated {
             background-color: #28a745 !important;
             box-shadow: none !important;
@@ -128,22 +150,35 @@
             cursor: default;
         }
 
-        /* 測試按鈕 */
-        .debug-reset {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 12px;
-            color: #aaa;
-            background: rgba(255,255,255,0.8);
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
+        /* --- 底部清除按鈕 --- */
+        .reset-section {
+            margin-top: 20px;
+            margin-bottom: 50px;
         }
+        
+        .btn-reset {
+            color: #999;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .btn-reset:hover {
+            background: #eee;
+            color: #333;
+        }
+
     </style>
 </head>
 <body>
+
+    <div class="header-section">
+        <h1>📝 國文科教學進度看板</h1>
+        <div class="date-display" id="top-date-display">載入日期中...</div>
+    </div>
 
     <div class="class-card">
         <div class="card-header">
@@ -173,7 +208,6 @@
         </div>
     </div>
 
-
     <div class="class-card">
         <div class="card-header">
             <span class="session-tag">第 2 節</span>
@@ -184,9 +218,9 @@
                 <div class="date-title">📅 上次進度 (1/12 一 - 第 2 節)</div>
                 <div class="dashed-line"></div>
                 <div class="course-detail">
-                    <div><span class="label">進度：</span>檢討第八課大卷</div>
-                    <div><span class="label">作業：</span>完成第九課大卷其他部分</div>
-                    <div><span class="label">測驗：</span>考第九課大卷選擇1-10並批改</div>
+                    <div><span class="label">進度：</span>(請輸入117班內容)</div>
+                    <div><span class="label">作業：</span>(請輸入作業內容)</div>
+                    <div><span class="label">測驗：</span>(請輸入測驗內容)</div>
                 </div>
             </div>
         </div>
@@ -201,19 +235,19 @@
         </div>
     </div>
 
-
     <div class="class-card">
         <div class="card-header">
             <span class="session-tag">第 3 節</span>
-            <span class="class-title">103 班 - 國語文</span> </div>
+            <span class="class-title">116 班 - 國語文</span>
+        </div>
         <div class="content-area">
             <div class="yellow-box">
                 <div class="date-title">📅 上次進度 (1/12 一 - 第 3 節)</div>
                 <div class="dashed-line"></div>
                 <div class="course-detail">
-                    <div><span class="label">進度：</span>(請輸入進度)</div>
-                    <div><span class="label">作業：</span>(請輸入作業)</div>
-                    <div><span class="label">測驗：</span>(請輸入測驗)</div>
+                    <div><span class="label">進度：</span>(請輸入116班內容)</div>
+                    <div><span class="label">作業：</span>(請輸入作業內容)</div>
+                    <div><span class="label">測驗：</span>(請輸入測驗內容)</div>
                 </div>
             </div>
         </div>
@@ -221,14 +255,16 @@
             <a href="https://docs.google.com/forms/u/0/" 
                target="_blank" 
                class="btn-submit" 
-               id="btn-103"
-               onclick="markUpdated('103')">
+               id="btn-116"
+               onclick="markUpdated('116')">
                ✏️ 填寫進度
             </a>
         </div>
     </div>
 
-    <button class="debug-reset" onclick="resetAll()">🔄 清除今日紀錄 (重置)</button>
+    <div class="reset-section">
+        <button class="btn-reset" onclick="resetAll()">🔄 清除今日所有紀錄 (重置狀態)</button>
+    </div>
 
     <script>
         // ==========================================
@@ -236,53 +272,19 @@
         // ==========================================
 
         document.addEventListener('DOMContentLoaded', function() {
-            // 這裡列出所有班級的代號
-            const classes = ['109', '117', '103']; 
+            // 1. 顯示今天的日期
+            showHeaderDate();
+
+            // 2. 定義班級列表
+            const classes = ['109', '117', '116']; 
             
-            // 檢查每一個班級的狀態
+            // 3. 檢查每一個班級的狀態
             classes.forEach(function(id) {
                 checkStatus(id);
             });
         });
 
-        // 核心功能：變身成綠色按鈕
-        function transformButtonToGreen(classId) {
-            const btn = document.getElementById('btn-' + classId);
-            if (btn) {
-                btn.innerText = "✅ 已更新當天新進度";
-                btn.classList.add('updated'); // 加入 CSS class 改變樣式
-            }
-        }
-
-        // 當按鈕被點擊時
-        function markUpdated(classId) {
-            const today = getTodayStr();
-            localStorage.setItem('progress_record_' + classId, today);
-            transformButtonToGreen(classId);
-        }
-
-        // 檢查狀態
-        function checkStatus(classId) {
-            const lastRecord = localStorage.getItem('progress_record_' + classId);
-            const today = getTodayStr();
-
-            if (lastRecord === today) {
-                transformButtonToGreen(classId);
-            }
-        }
-
-        // 取得日期字串
-        function getTodayStr() {
+        // --- 日期顯示功能 ---
+        function showHeaderDate() {
             const d = new Date();
-            return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-        }
-
-        // 清除紀錄
-        function resetAll() {
-            localStorage.clear();
-            location.reload();
-        }
-    </script>
-
-</body>
-</html>
+            const options
