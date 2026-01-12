@@ -13,6 +13,8 @@
             --text-main: #333;
             --text-sub: #666;
             --accent-color: #d84315;
+            /* 新增：已填寫後的顏色 (深紫色) */
+            --clicked-color: #8e44ad; 
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -104,9 +106,9 @@
         .period-badge {
             background-color: var(--primary-color);
             color: white;
-            padding: 10px 24px;       
-            border-radius: 30px;      
-            font-size: 1.3rem;        
+            padding: 10px 24px;        
+            border-radius: 30px;       
+            font-size: 1.3rem;         
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
             display: inline-flex;
@@ -184,6 +186,7 @@
             font-weight: bold;
             font-size: 1.05rem;
             transition: background 0.3s;
+            cursor: pointer;
         }
         .btn-add:hover {
             background-color: #36527a;
@@ -194,6 +197,16 @@
         .active-now .btn-add:hover {
              background-color: #bf360c;
         }
+
+        /* ▼▼▼ 新增：已點擊後的樣式 (紫色) ▼▼▼ */
+        .btn-add.clicked {
+            background-color: var(--clicked-color) !important;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.2); /* 增加一點內陰影，感覺像按下去 */
+        }
+        .btn-add.clicked:hover {
+            background-color: #732d91 !important;
+        }
+        /* ▲▲▲ 新增結束 ▲▲▲ */
 
         .loading {
             text-align: center;
@@ -222,29 +235,29 @@
             background-color: #1b5e20;
         }
 
-        /* ▼▼▼ 新增：懸浮重新整理按鈕樣式 ▼▼▼ */
+        /* 懸浮重新整理按鈕樣式 */
         .fab-refresh {
-            position: fixed; /* 固定位置，隨網頁滑動 */
-            bottom: 30px;    /* 距離底部 30px */
-            right: 30px;     /* 距離右側 30px */
+            position: fixed; 
+            bottom: 30px;    
+            right: 30px;     
             background-color: var(--primary-color);
             color: white;
             width: 60px;
             height: 60px;
-            border-radius: 50%; /* 圓形 */
+            border-radius: 50%; 
             border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* 深一點的陰影 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
             cursor: pointer;
             font-size: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: transform 0.2s, background-color 0.3s;
-            z-index: 9999; /* 確保在最上層 */
+            z-index: 9999; 
         }
         .fab-refresh:hover {
             background-color: #36527a;
-            transform: scale(1.1); /* 懸停時稍微放大 */
+            transform: scale(1.1); 
         }
         .fab-refresh:active {
             transform: scale(0.9);
@@ -257,10 +270,9 @@
         }
         .spinning {
             animation: spin 0.8s linear infinite;
-            pointer-events: none; /* 旋轉時禁止重複點擊 */
+            pointer-events: none; 
             opacity: 0.8;
         }
-        /* ▲▲▲ 新增結束 ▲▲▲ */
         
         @media (max-width: 600px) {
             .card-header {
@@ -374,15 +386,11 @@
         renderSchedule();
     }
 
-    // ★★★ 新增：手動點擊重新整理按鈕時觸發的函式 ★★★
     function reloadData() {
         const btn = document.querySelector('.fab-refresh');
         btn.classList.add('spinning'); // 加入旋轉動畫
         
-        // 重新執行讀取資料
         fetchData(function() {
-            // 資料讀取完成後的回呼函式 (Callback)
-            // 延遲一點點時間讓動畫跑一下，讓使用者有感
             setTimeout(() => {
                 btn.classList.remove('spinning');
             }, 600);
@@ -393,13 +401,11 @@
         Papa.parse(csvUrl, {
             download: true,
             header: true,
-            // 加上時間戳記避免瀏覽器快取舊資料
-            // query: "t=" + new Date().getTime(), 
             complete: function(results) {
                 g_csvData = results.data;
                 processData();
                 renderSchedule();
-                if (callback) callback(); // 如果有傳入 callback 就執行
+                if (callback) callback(); 
             },
             error: function(err) {
                 console.error("Error:", err);
@@ -457,6 +463,15 @@
         const endMinutes = endH * 60 + endM;
 
         return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    }
+
+    // ★★★ 新增：點擊按鈕後的處理函式 ★★★
+    function markAsUpdated(btn) {
+        // 設定一個微小的延遲，讓連結先開啟新分頁，再變色
+        setTimeout(() => {
+            btn.innerText = "已更新為本日新進度";
+            btn.classList.add('clicked'); // 加入 CSS class 變色 (紫色)
+        }, 100);
     }
 
     function renderSchedule() {
@@ -531,6 +546,7 @@
                 `;
             }
 
+            // ★★★ 修改：在 <a ... class="btn-add"> 中加入 onclick 事件 ★★★
             card.innerHTML = `
                 <div class="card-header">
                     <div class="header-left">
@@ -545,7 +561,7 @@
                 </div>
                 <div class="card-body">
                     ${recordHtml}
-                    <a href="${formLink}" target="_blank" class="btn-add">
+                    <a href="${formLink}" target="_blank" class="btn-add" onclick="markAsUpdated(this)">
                         ${isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度'}
                     </a>
                 </div>
