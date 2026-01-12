@@ -3,169 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>國文科教學進度登記</title>
+    <title>教學進度看板</title>
     <style>
-        /* --- 1. 整體版面 --- */
+        /* --- 網頁基本設定 --- */
         body {
             font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
-            background-color: #f4f6f9;
+            background-color: #f4f6f9; /* 背景灰 */
             display: flex;
             justify-content: center;
             padding: 20px;
-            margin: 0;
         }
 
         .container {
-            background-color: white;
             width: 100%;
-            max-width: 500px;
-            padding: 25px;
-            border-radius: 12px;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        h2 {
-            text-align: center;
-            color: #2c3e50;
-            margin-top: 0;
+        /* --- 依照您截圖設計的「米黃色進度卡片」 --- */
+        .progress-card {
+            background-color: #fff8e1; /* 米黃色背景 */
+            border-left: 5px solid #ffe0b2; /* 左邊裝飾線 */
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            position: relative;
         }
 
-        /* --- 2. 模擬您截圖中的「上次進度」區塊 --- */
-        .progress-box {
-            background-color: #fff8e1; /* 米黃色背景 */
-            border: 1px solid #ffe0b2;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            color: #d35400; /* 深橘色/棕色文字 */
-            font-size: 1.1rem;
+        /* 上半部：上次進度文字 */
+        .progress-header {
+            color: #d35400; /* 紅棕色文字 */
+            font-size: 1.2rem;
             font-weight: bold;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed #e6ceace0; /* 下方虛線 */
+            margin-bottom: 10px;
+        }
+
+        /* --- 重點：綠色標籤樣式 --- */
+        #status-badge {
+            display: none; /* ⚠️ 預設是隱藏的！ */
+            
+            background-color: #4CAF50; /* 綠色背景 */
+            color: white;              /* 白色字 */
+            font-size: 0.8rem;         /* 字體大小 */
+            padding: 4px 10px;         /*內距 */
+            border-radius: 4px;        /* 圓角 */
+            margin-left: 10px;         /* 與前方文字的距離 */
+            vertical-align: middle;    /* 垂直置中對齊 */
+            font-weight: normal;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 下半部：詳細內容 (模擬您的版面) */
+        .progress-content {
+            color: #5d4037;
+            font-size: 0.95rem;
             line-height: 1.6;
         }
 
-        /* 下方的分隔線 */
-        .divider {
-            border-bottom: 2px dashed #ffe0b2;
-            margin: 10px 0;
-        }
-
-        /* --- 3. 重點：綠色標籤樣式 --- */
-        #update-badge {
-            display: none; /* 預設隱藏 */
-            
-            /* 標籤外觀 */
-            background-color: #28a745;
-            color: white;
-            font-size: 0.8rem;
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-left: 8px; /* 與前方括號的距離 */
-            vertical-align: middle;
-            font-weight: normal;
-        }
-
-        /* --- 4. 按鈕樣式 --- */
-        .btn-action {
+        /* --- 按鈕樣式 --- */
+        .action-btn {
             display: block;
             width: 100%;
-            text-align: center;
             background-color: #3498db;
             color: white;
-            text-decoration: none;
-            padding: 12px 0;
+            text-align: center;
+            padding: 12px;
             border-radius: 50px;
-            font-size: 1.1rem;
+            text-decoration: none;
             font-weight: bold;
+            margin-top: 10px;
             transition: 0.2s;
-            margin-top: 20px;
         }
-        .btn-action:hover {
+        .action-btn:hover {
             background-color: #2980b9;
         }
 
-        /* 測試用按鈕 (右下角小字) */
-        .reset-btn {
+        /* 測試用的小按鈕 */
+        .reset-link {
             font-size: 12px;
-            color: #aaa;
-            background: none;
-            border: none;
+            color: #999;
+            text-decoration: underline;
             cursor: pointer;
-            margin-top: 30px;
             float: right;
+            margin-top: 10px;
+            border: none;
+            background: none;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>📝 國文科教學進度</h2>
-        <div style="text-align: center; color: #7f8c8d; margin-bottom: 10px;">
-            <span id="today-date-display">載入日期中...</span>
-        </div>
+        <h2 style="text-align:center; color:#333;">📝 國文科教學看板</h2>
 
-        <div class="progress-box">
-            📅 上次進度 (1/12 一 - 第 1 節)<span id="update-badge">✅ 已更新當天新進度</span>
+        <div class="progress-card">
+            <div class="progress-header">
+                📅 上次進度 (1/12 一 - 第 1 節)<span id="status-badge">✅ 已更新當天新進度</span>
+            </div>
             
-            <div class="divider"></div>
-            
-            <div style="font-size: 0.9rem; color: #8d6e63; font-weight: normal;">
-                (這裡是顯示詳細進度內容的區域...)
+            <div class="progress-content">
+                這裡顯示詳細的進度內容...<br>
+                例如：第三課 課文講解 P.35
             </div>
         </div>
 
         <a href="https://docs.google.com/forms/u/0/" 
            target="_blank" 
-           class="btn-action"
-           onclick="markAsUpdated()">
+           class="action-btn"
+           onclick="markAsDone()">
            👉 前往填寫今日進度
         </a>
 
-        <button class="reset-btn" onclick="clearStatus()">🔄 重置狀態 (測試用)</button>
+        <button onclick="resetStatus()" class="reset-link">🔄 清除紀錄 (測試再次出現)</button>
     </div>
 
     <script>
-        // --- 設定與邏輯 ---
-        const STORAGE_KEY = 'teacher_schedule_check_v3';
+        const STORAGE_KEY = 'daily_progress_status'; // 瀏覽器記憶用的名字
 
+        // 1. 網頁一打開，馬上檢查
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. 顯示今天的日期
-            const d = new Date();
-            const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
-            document.getElementById('today-date-display').innerText = dateStr;
-
-            // 2. 檢查是否已經按過
-            checkIfUpdated();
+            checkStatus();
         });
 
-        // 按下按鈕時執行
-        function markAsUpdated() {
-            const today = getTodayStr();
-            localStorage.setItem(STORAGE_KEY, today); // 記住今天已做
+        // 2. 按下按鈕時執行的動作
+        function markAsDone() {
+            // 取得今天日期 (格式：2025-01-12)
+            const today = new Date().toISOString().split('T')[0];
             
-            // 立即顯示標籤
-            document.getElementById('update-badge').style.display = 'inline-block';
+            // 存入記憶體
+            localStorage.setItem(STORAGE_KEY, today);
+            
+            // 讓綠色標籤現身！
+            document.getElementById('status-badge').style.display = 'inline-block';
         }
 
-        // 檢查狀態
-        function checkIfUpdated() {
-            const lastRecord = localStorage.getItem(STORAGE_KEY);
-            const today = getTodayStr();
+        // 3. 檢查邏輯
+        function checkStatus() {
+            const lastDate = localStorage.getItem(STORAGE_KEY);
+            const today = new Date().toISOString().split('T')[0];
 
-            if (lastRecord === today) {
-                document.getElementById('update-badge').style.display = 'inline-block';
+            // 如果記憶裡的日期 = 今天，就顯示標籤
+            if (lastDate === today) {
+                document.getElementById('status-badge').style.display = 'inline-block';
             }
         }
 
-        // 取得 YYYY-MM-DD 格式
-        function getTodayStr() {
-            const d = new Date();
-            return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-        }
-
-        // 測試用清除功能
-        function clearStatus() {
+        // 測試用：清除
+        function resetStatus() {
             localStorage.removeItem(STORAGE_KEY);
-            location.reload();
+            location.reload(); // 重新整理網頁
         }
     </script>
 
