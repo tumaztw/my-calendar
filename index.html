@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (跨天追蹤版)</title>
+    <title>張老師教學進度看板 (補交強化版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
@@ -28,6 +28,10 @@
         .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
         .hw-chip { background: white; border: 1px solid #90caf9; color: #1565c0; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; }
         .hw-chip.active { background: #1565c0; color: white; border-color: #1565c0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        /* 補交按鈕專用樣式 */
+        .remedy-chip { border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; }
+        .remedy-chip.active { background: var(--error-color); color: white; border-color: var(--error-color); }
+        
         .hw-input { width: 100%; padding: 10px; border: 1px solid #90caf9; border-radius: 4px; box-sizing: border-box; margin-bottom: 12px; font-size: 1rem; }
         .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; }
         .num-btn { height: 42px; border: 1px solid #bbdefb; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #555; font-weight: 500; font-size: 1.1rem; }
@@ -52,6 +56,7 @@
 <button class="fab-refresh" onclick="location.reload()">↻</button>
 
 <script>
+    // 請填入您的 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
@@ -148,23 +153,20 @@
             
             const displayRow = history[0]; 
 
-            // ★ 智慧追蹤：找出最後一次有勾選「缺交」的紀錄，顯示它是哪項作業
+            // ★ 找出最近一筆有勾選「缺交」的紀錄 (補交來源)
+            const lastMissingRow = history.find(r => parseNums(r['缺交座號']).length > 0);
             let missingInfo = "無";
-            let checkRow = displayRow;
+            let remedyItem = ""; // 補交項目名稱
             
-            if (displayRow) {
-                // 如果最新這筆沒缺交，往前找最近一筆有缺交的
-                const lastMissingRow = history.find(r => parseNums(r['缺交座號']).length > 0);
-                if (lastMissingRow) {
-                    missingInfo = `<span style="color:#d32f2f; font-weight:bold;">[${lastMissingRow['檢查項目'] || '未分類'}]</span> ${lastMissingRow['缺交座號']}`;
-                    // 檢查按鈕與紅燈，對應這筆有缺交的紀錄
-                    checkRow = lastMissingRow;
-                }
+            if (lastMissingRow) {
+                remedyItem = lastMissingRow['檢查項目'] || "上次作業";
+                missingInfo = `<span style="color:#d32f2f; font-weight:bold;">[${remedyItem}]</span> ${lastMissingRow['缺交座號']}`;
             }
 
+            // ★ 生成按鈕區
             let hwItems = [];
+            // 如果今天已經填了進度，按鈕顯示上一堂(history[1])指派的作業
             if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
-                // 如果今天上過課了，按鈕顯示上一堂(history[1])指派的作業
                 const prevHwRow = history[1];
                 if(prevHwRow['作業內容']) hwItems.push(...prevHwRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
             } else if (displayRow) {
@@ -175,7 +177,8 @@
             const card = document.createElement('div');
             card.className = 'class-card';
             
-            let initialMissing = checkRow ? parseNums(checkRow['缺交座號']) : [];
+            // 紅燈對應最近一次缺交紀錄
+            let initialMissing = lastMissingRow ? parseNums(lastMissingRow['缺交座號']) : [];
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
             card.innerHTML = `
@@ -192,13 +195,14 @@
                     </div>
                     
                     <div class="check-panel" id="panel-${id}">
-                        <span class="panel-title">🔍 檢查項目：${hwItems.length > 0 ? '上次作業' : '無待辦'}</span>
+                        <span class="panel-title">🔍 檢查項目 / 補交登記</span>
                         <div class="hw-chips" id="chips-${id}">
+                            ${remedyItem ? `<div class="hw-chip remedy-chip" onclick="setItem('${id}','補：${remedyItem}')">補：${remedyItem}</div>` : ''}
                             ${hwItems.map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
                             <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="手動輸入項目..." oninput="updateLink('${id}')">
-                        <div class="all-clear-msg" id="msg-${id}">🎉 全數繳清！</div>
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或手動輸入..." oninput="updateLink('${id}')">
+                        <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
                         <div class="number-grid">
                             ${Array.from({length:40}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
