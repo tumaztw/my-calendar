@@ -56,9 +56,6 @@
         .remedy-chip { border: 1px solid #fecaca; color: #dc2626; background: #fef2f2; font-weight: bold; }
         .remedy-chip.active { background: #dc2626; color: white; border-color: #dc2626; box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3); }
         
-        .hw-input { width: 100%; padding: 8px 12px; border: 1px solid #bfdbfe; border-radius: 6px; box-sizing: border-box; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border 0.2s; }
-        .hw-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        
         /* 座號區 */
         .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 6px; }
         .num-btn { height: 35px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #64748b; font-weight: 600; font-size: 1rem; transition: all 0.15s; }
@@ -210,17 +207,15 @@
         updateLink(id);
     }
 
-    // ★ 修改：同時接收「原始作業名稱」和「顯示用的標籤(含日期)」
     function setItem(id, rawName, displayLabel) {
         const input = document.getElementById(`in-${id}`);
-        input.value = displayLabel; // 輸入框顯示 "1/12 作業A"
+        input.value = displayLabel; // 雖然看不到，但數值會被寫入隱藏欄位
 
         // 更新按鈕樣式
         document.querySelectorAll(`#chips-${id} .hw-chip`).forEach(c => {
             c.classList.toggle('active', c.innerText === displayLabel);
         });
 
-        // 查找缺交名單時，使用原始名稱 (因為 Map 的 Key 是原始名稱)
         if (g_itemMissingMap[id] && g_itemMissingMap[id][rawName]) {
              g_selectedMissing[id] = new Set(g_itemMissingMap[id][rawName].nums);
         } else {
@@ -262,7 +257,7 @@
 
             g_itemMissingMap[id] = classOutstanding;
 
-            let blueButtons = []; // 改用 Array 存物件 {name, label}
+            let blueButtons = []; 
             let redButtons = [];
 
             // 1. 處理歷史欠債 (Outstanding)
@@ -297,9 +292,7 @@
             rawHwList.forEach(s => {
                 const cleanName = s.trim();
                 if(cleanName && cleanName !== '無') {
-                    // 檢查是否已在紅色清單 (避免重複)
                     const isRemedy = redButtons.some(rb => rb.name === cleanName);
-                    // 檢查是否已在藍色清單 (避免重複)
                     const isAlreadyBlue = blueButtons.some(bb => bb.name === cleanName);
                     
                     if(!isRemedy && !isAlreadyBlue) {
@@ -317,7 +310,6 @@
                 initialLoadLabel = redButtons[0].label;
                 initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
             } else if (blueButtons.length > 0) {
-                // 如果藍色按鈕中有缺交紀錄，預設載入第一個有缺交的
                 for (let btn of blueButtons) {
                     if (classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
                         initialLoadLabel = btn.label;
@@ -336,7 +328,6 @@
                 missingSummary.push(`<span style="color:#d32f2f;">[${btn.name}] ${count}人</span>`);
             });
             blueButtons.forEach(btn => {
-                // 只有當確實有缺交紀錄時才顯示在上方 summary
                 if(classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
                       missingSummary.push(`<span>[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
                 }
@@ -350,7 +341,7 @@
             const card = document.createElement('div');
             card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
-            // ★ 修改處：Array.from({length:35}) 控制座號只到 35
+            // ★ 修改：輸入框改為 hidden，座號維持 35
             card.innerHTML = `
                 <div class="status-badge">🔴 上課中</div>
                 <div class="card-header">
@@ -376,7 +367,9 @@
                             ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
                             ${blueButtons.map(btn => `<div class="hw-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadLabel}">
+                        
+                        <input type="hidden" id="in-${id}" value="${initialLoadLabel}">
+                        
                         <div class="number-grid">
                             ${Array.from({length:35}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
