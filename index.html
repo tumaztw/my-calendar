@@ -6,4 +6,390 @@
     <title>張老師教學進度看板 (日期標示版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #
+        :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); margin: 0; padding: 10px; padding-bottom: 80px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .date-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; }
+        .nav-btn { background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: var(--primary-color); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; transition: transform 0.1s; }
+        .nav-btn:active { transform: scale(0.95); }
+        .date-display { font-size: 1.2rem; font-weight: bold; color: var(--dark-text); }
+        
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* 卡片設計 */
+        .class-card { background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; position: relative; transition: transform 0.2s; border: 1px solid #eee; }
+        .class-card.active-now { border: 2px solid var(--accent-color); transform: scale(1.005); box-shadow: 0 5px 15px rgba(255, 152, 0, 0.15); }
+        .status-badge { position: absolute; top: 12px; right: 12px; background: var(--error-color); color: white; padding: 3px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: bold; display: none; box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3); animation: pulse 2s infinite; }
+        .class-card.active-now .status-badge { display: block; }
+
+        /* 標頭區塊 */
+        .card-header { display: flex; align-items: center; padding: 0; background: white; border-bottom: 1px solid #f0f0f0; }
+        .period-box { background: var(--primary-color); color: white; width: 60px; height: 70px; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-right: 15px; }
+        .p-num { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+        .p-label { font-size: 0.75rem; opacity: 0.9; }
+        .class-info { flex: 1; padding: 10px 0; }
+        .class-title { font-size: 1.3rem; font-weight: bold; color: var(--dark-text); margin-bottom: 2px; }
+        .class-subject { color: #7f8c8d; font-size: 0.9rem; font-weight: 500; }
+
+        .card-body { padding: 15px; }
+        
+        /* 紀錄區 */
+        .last-record { background-color: #fffbf2; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; font-size: 0.9rem; line-height: 1.6; }
+        .last-record h4 { margin: 0 0 8px 0; color: #f57c00; font-size: 0.95rem; border-bottom: 1px solid #ffe0b2; padding-bottom: 4px; display: block; }
+        .last-record.today-record { background-color: #f0fdf4; border-color: #bbf7d0; }
+        .last-record.today-record h4 { color: #15803d; border-color: #bbf7d0; }
+
+        .info-row { display: flex; margin-bottom: 4px; align-items: flex-start; }
+        .info-label { min-width: 45px; font-weight: bold; color: #666; }
+        .info-content { flex: 1; color: #333; word-break: break-all; }
+
+        /* 操作區 */
+        .check-panel { background-color: #f0f7ff; padding: 15px; border-radius: 10px; border: 1px solid #dbeafe; }
+        
+        /* 按鈕樣式 */
+        .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .hw-chip { background: white; border: 1px solid #bfdbfe; color: #2563eb; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .hw-chip:active { transform: scale(0.95); }
+        .hw-chip.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
+        
+        /* 紅色補交按鈕 */
+        .remedy-chip { border: 1px solid #fecaca; color: #dc2626; background: #fef2f2; font-weight: bold; }
+        .remedy-chip.active { background: #dc2626; color: white; border-color: #dc2626; box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3); }
+        
+        .hw-input { width: 100%; padding: 8px 12px; border: 1px solid #bfdbfe; border-radius: 6px; box-sizing: border-box; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border 0.2s; }
+        .hw-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        /* 座號區 */
+        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 6px; }
+        .num-btn { height: 35px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #64748b; font-weight: 600; font-size: 1rem; transition: all 0.15s; }
+        .num-btn.missing { background: var(--error-color); color: white; border-color: var(--error-color); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(231, 76, 60, 0.4); }
+        
+        .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 14px; text-decoration: none; border-radius: 10px; font-weight: bold; margin-top: 15px; font-size: 1rem; border: none; box-shadow: 0 3px 8px rgba(74, 111, 165, 0.3); transition: background 0.2s; }
+        .btn-submit:hover { background: #3b5b8c; }
+        
+        .fab-refresh { position: fixed; bottom: 25px; right: 25px; background: var(--primary-color); color: white; width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(74, 111, 165, 0.4); z-index: 100; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .fab-refresh:active { transform: rotate(180deg); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="font-size:0.85rem; color:#888; letter-spacing: 2px; font-weight: bold;">TEACHER DASHBOARD</div>
+    <h1 style="margin: 5px 0; color:#2c3e50; font-size: 1.8rem;">張老師教學進度看板</h1>
+    <div class="date-controls">
+        <button class="nav-btn" onclick="changeDate(-1)">◀</button>
+        <span class="date-display" id="dateDisplay"></span>
+        <button class="nav-btn" onclick="changeDate(1)">▶</button>
+    </div>
+</div>
+
+<div class="container" id="mainContainer">
+    <div style="text-align:center; padding:60px; color:#666;">
+        <div>⏳ 正在連線至資料庫...</div>
+        <div style="font-size:0.9rem; margin-top:10px; color:#999;">如果停留太久，請檢查網路或按下右下角重新整理</div>
+    </div>
+</div>
+<button class="fab-refresh" onclick="location.reload()">↻</button>
+
+<script>
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
+    const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
+    
+    const entryIds = {
+        date: 'entry.1279670059', period: 'entry.1620291828',
+        progress: 'entry.244862663', homework: 'entry.1001982669',
+        quiz: 'entry.476700209', note: 'entry.1079052023',
+        item: 'entry.1450418126', missing: 'entry.551581621'
+    };
+
+    const timetable = {
+        1: [{p:1, c:'109'}, {p:2, c:'117'}, {p:4, c:'116'}],
+        2: [{p:2, c:'116'}, {p:3, c:'109'}, {p:5, c:'117'}, {p:7, c:'116', s:'閱讀'}],
+        3: [{p:2, c:'109'}, {p:3, c:'116'}, {p:7, c:'117'}],
+        4: [{p:1, c:'109'}, {p:3, c:'117'}, {p:4, c:'116'}, {p:6, c:'109', s:'閱讀'}],
+        5: [{p:2, c:'116'}, {p:5, c:'117'}, {p:7, c:'109'}]
+    };
+
+    const bellSchedule = {
+        1: {s: "08:20", e: "09:05"},
+        2: {s: "09:15", e: "10:00"},
+        3: {s: "10:10", e: "10:55"},
+        4: {s: "11:05", e: "11:50"},
+        5: {s: "13:15", e: "14:00"},
+        6: {s: "14:10", e: "14:55"},
+        7: {s: "15:15", e: "16:00"},
+        8: {s: "16:10", e: "16:55"}
+    };
+
+    let g_currentDate = new Date();
+    let g_rawRecords = []; 
+    let g_selectedMissing = {}; 
+    let g_itemMissingMap = {}; 
+
+    function changeDate(d) { g_currentDate.setDate(g_currentDate.getDate() + d); render(); }
+
+    function fetchData() {
+        Papa.parse(csvUrl, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results) => { 
+                if (results.data && results.data.length > 0) {
+                    g_rawRecords = results.data; 
+                    render(); 
+                } else {
+                    document.getElementById('mainContainer').innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">⚠️ 讀取到的資料為空，請檢查 CSV 連結是否正確。</div>';
+                }
+            },
+            error: (err) => {
+                document.getElementById('mainContainer').innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">⚠️ 無法連線至資料庫。<br>請檢查網路連線，或確認試算表是否已發佈為 CSV。</div>';
+                console.error(err);
+            }
+        });
+    }
+
+    function getSimpleDate(dateStr) {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+
+    function checkActive(period) {
+        const today = new Date();
+        if (g_currentDate.toDateString() !== today.toDateString()) return false;
+        const time = bellSchedule[period];
+        if (!time) return false;
+        const now = new Date();
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        const [sh, sm] = time.s.split(':').map(Number);
+        const [eh, em] = time.e.split(':').map(Number);
+        return currentMins >= (sh * 60 + sm) && currentMins <= (eh * 60 + em);
+    }
+
+    function getClassByDateAndPeriod(dateStr, period) {
+        const d = new Date(dateStr);
+        const day = d.getDay(); 
+        const classes = timetable[day];
+        if (!classes) return null;
+        const target = classes.find(c => c.p == period);
+        return target ? target.c : null;
+    }
+
+    function parseNums(str) {
+        if(!str) return [];
+        return str.toString().split(/[,\s\u3001]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+    }
+
+    function updateLink(id) {
+        const item = document.getElementById(`in-${id}`).value;
+        const missing = Array.from(g_selectedMissing[id] || []).sort((a,b)=>a-b).join(' ');
+        const dateStr = g_currentDate.toISOString().split('T')[0];
+        const p = id.split('-').pop(); 
+        const btn = document.getElementById(`btn-${id}`);
+        btn.href = `${formUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${p}&${entryIds.item}=${encodeURIComponent(item)}&${entryIds.missing}=${encodeURIComponent(missing)}`;
+        refreshGrid(id);
+    }
+
+    function refreshGrid(id) {
+        const currentSet = g_selectedMissing[id] || new Set();
+        const grid = document.querySelector(`#panel-${id} .number-grid`);
+        if(!grid) return;
+        
+        grid.querySelectorAll('.num-btn').forEach(btn => {
+            const n = parseInt(btn.innerText);
+            if(currentSet.has(n)) btn.classList.add('missing');
+            else btn.classList.remove('missing');
+        });
+    }
+
+    function toggleStudent(id, n, el) {
+        if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set();
+        const s = g_selectedMissing[id];
+        if(s.has(n)) { s.delete(n); }
+        else { s.add(n); }
+        updateLink(id);
+    }
+
+    // ★ 修改：同時接收「原始作業名稱」和「顯示用的標籤(含日期)」
+    function setItem(id, rawName, displayLabel) {
+        const input = document.getElementById(`in-${id}`);
+        input.value = displayLabel; // 輸入框顯示 "1/12 作業A"
+
+        // 更新按鈕樣式
+        document.querySelectorAll(`#chips-${id} .hw-chip`).forEach(c => {
+            c.classList.toggle('active', c.innerText === displayLabel);
+        });
+
+        // 查找缺交名單時，使用原始名稱 (因為 Map 的 Key 是原始名稱)
+        if (g_itemMissingMap[id] && g_itemMissingMap[id][rawName]) {
+             g_selectedMissing[id] = new Set(g_itemMissingMap[id][rawName].nums);
+        } else {
+             g_selectedMissing[id] = new Set();
+        }
+        updateLink(id);
+    }
+
+    function render() {
+        const container = document.getElementById('mainContainer');
+        const dateStr = g_currentDate.toISOString().split('T')[0]; 
+        document.getElementById('dateDisplay').innerText = g_currentDate.toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'});
+        
+        const day = g_currentDate.getDay();
+        const classes = timetable[day] || [];
+        if(classes.length === 0) { container.innerHTML = '<div style="text-align:center; padding:60px; color:#888;">☕ 今天沒有排課，好好休息！</div>'; return; }
+
+        container.innerHTML = '';
+        g_itemMissingMap = {}; 
+
+        classes.forEach(c => {
+            const id = `${dateStr}-${c.p}`; 
+            const isActive = checkActive(c.p); 
+
+            const history = g_rawRecords.filter(r => {
+                const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
+                return rClass === c.c && r['日期'] <= dateStr; 
+            }).sort((a,b) => b['日期'].localeCompare(a['日期']) || b['節次'] - a['節次']);
+            
+            const displayRow = history[0]; 
+
+            let classOutstanding = {}; 
+            [...history].reverse().forEach(r => {
+                const item = r['檢查項目'];
+                const nums = parseNums(r['缺交座號']);
+                const rDate = r['日期'];
+                if (item) classOutstanding[item] = { nums: nums, date: rDate };
+            });
+
+            g_itemMissingMap[id] = classOutstanding;
+
+            let blueButtons = []; // 改用 Array 存物件 {name, label}
+            let redButtons = [];
+
+            // 1. 處理歷史欠債 (Outstanding)
+            Object.keys(classOutstanding).forEach(item => {
+                const data = classOutstanding[item];
+                if (data.nums.length > 0) {
+                    const dLabel = getSimpleDate(data.date);
+                    const label = `${dLabel} ${item}`;
+                    if (data.date === dateStr) {
+                        blueButtons.push({ name: item, label: label }); 
+                    } else {
+                        redButtons.push({ name: item, label: label }); 
+                    }
+                }
+            });
+
+            // 2. 處理今日作業 / 上次指派 (加入藍色區)
+            let rawHwList = [];
+            let targetRowDate = "";
+            if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
+                if(history[1]['作業內容']) {
+                    rawHwList.push(...history[1]['作業內容'].split(/[、\n,，]/));
+                    targetRowDate = history[1]['日期']; // 上次作業的日期
+                }
+            } else if (displayRow) {
+                if(displayRow['作業內容']) {
+                    rawHwList.push(...displayRow['作業內容'].split(/[、\n,，]/));
+                    targetRowDate = displayRow['日期']; // 這次作業的日期
+                }
+            }
+            
+            rawHwList.forEach(s => {
+                const cleanName = s.trim();
+                if(cleanName && cleanName !== '無') {
+                    // 檢查是否已在紅色清單 (避免重複)
+                    const isRemedy = redButtons.some(rb => rb.name === cleanName);
+                    // 檢查是否已在藍色清單 (避免重複)
+                    const isAlreadyBlue = blueButtons.some(bb => bb.name === cleanName);
+                    
+                    if(!isRemedy && !isAlreadyBlue) {
+                        const dLabel = getSimpleDate(targetRowDate || dateStr);
+                        blueButtons.push({ name: cleanName, label: `${dLabel} ${cleanName}` });
+                    }
+                }
+            });
+
+            // 智慧預設載入
+            let initialLoadLabel = '';
+            let initialMissing = [];
+
+            if (redButtons.length > 0) {
+                initialLoadLabel = redButtons[0].label;
+                initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
+            } else if (blueButtons.length > 0) {
+                // 如果藍色按鈕中有缺交紀錄，預設載入第一個有缺交的
+                for (let btn of blueButtons) {
+                    if (classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
+                        initialLoadLabel = btn.label;
+                        initialMissing = classOutstanding[btn.name].nums;
+                        break;
+                    }
+                }
+            }
+
+            if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
+
+            // 黃色區塊顯示
+            let missingSummary = [];
+            redButtons.forEach(btn => {
+                const count = classOutstanding[btn.name].nums.length;
+                missingSummary.push(`<span style="color:#d32f2f;">[${btn.name}] ${count}人</span>`);
+            });
+            blueButtons.forEach(btn => {
+                // 只有當確實有缺交紀錄時才顯示在上方 summary
+                if(classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
+                     missingSummary.push(`<span>[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
+                }
+            });
+            let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
+
+            let isTodayRecord = (displayRow && displayRow['日期'] === dateStr);
+            let recordTitle = isTodayRecord ? "今日進度" : "上次紀錄";
+            let recordClass = isTodayRecord ? "today-record" : "";
+
+            const card = document.createElement('div');
+            card.className = `class-card ${isActive ? 'active-now' : ''}`;
+            
+            card.innerHTML = `
+                <div class="status-badge">🔴 上課中</div>
+                <div class="card-header">
+                    <div class="period-box">
+                        <div class="p-num">${c.p}</div>
+                        <div class="p-label">節</div>
+                    </div>
+                    <div class="class-info">
+                        <div class="class-title">${c.c} 班</div>
+                        <div class="class-subject">${c.s || '國文'}</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="last-record ${recordClass}">
+                        <h4>📅 ${recordTitle} (${displayRow ? displayRow['日期'].slice(5) : '無'})</h4>
+                        <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? displayRow['教學進度'] : '無'}</span></div>
+                        <div class="info-row" style="color:#f57c00;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? displayRow['作業內容'] : '無'}</span></div>
+                        <div class="info-row"><span class="info-label">欠繳：</span><span class="info-content">${missingInfoStr}</span></div>
+                    </div>
+                    
+                    <div class="check-panel" id="panel-${id}">
+                        <div class="hw-chips" id="chips-${id}">
+                            ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
+                            ${blueButtons.map(btn => `<div class="hw-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
+                        </div>
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadLabel}">
+                        <div class="number-grid">
+                            ${Array.from({length:40}, (_,i)=>i+1).map(n => `
+                                <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <a href="#" target="_blank" class="btn-submit" id="btn-${id}">🚀 填寫進度</a>
+                </div>
+            `;
+            container.appendChild(card);
+            updateLink(id);
+        });
+    }
+    fetchData();
+</script>
+</body>
+</html>
