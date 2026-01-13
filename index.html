@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (智慧檢查版)</title>
+    <title>張老師教學進度看板 (跨天追蹤版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
@@ -18,24 +18,23 @@
         .card-header .class-name { font-weight: bold; font-size: 1.1rem; color: #333; }
         .card-body { padding: 15px; }
         .last-record { background-color: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; font-size: 0.95rem; line-height: 1.6; }
-        .last-record h4 { margin: 0 0 8px 0; color: #e65100; border-bottom: 1px dashed #ffcc80; font-size: 1rem; display: flex; justify-content: space-between; }
+        .last-record h4 { margin: 0 0 8px 0; color: #e65100; border-bottom: 1px dashed #ffcc80; font-size: 1rem; }
         .info-row { display: flex; margin-bottom: 4px; align-items: flex-start; }
         .info-label { min-width: 45px; font-weight: bold; color: #555; white-space: nowrap; }
         .info-content { flex: 1; word-break: break-word; white-space: pre-wrap; }
-        .check-panel { background-color: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb; margin-bottom: 10px; transition: background-color 0.3s; }
+        .check-panel { background-color: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb; margin-bottom: 10px; }
         .check-panel.all-clear { background-color: #e8f5e9; border-color: #a5d6a7; }
         .panel-title { font-weight: bold; margin-bottom: 8px; color: #1565c0; display: block; }
         .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .hw-chip { background: white; border: 1px solid #90caf9; color: #1565c0; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; user-select: none; }
+        .hw-chip { background: white; border: 1px solid #90caf9; color: #1565c0; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; }
         .hw-chip.active { background: #1565c0; color: white; border-color: #1565c0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .hw-input { width: 100%; padding: 10px; border: 1px solid #90caf9; border-radius: 4px; box-sizing: border-box; margin-bottom: 12px; font-size: 1rem; }
         .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; }
-        .num-btn { height: 42px; border: 1px solid #bbdefb; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #555; font-weight: 500; font-size: 1.1rem; transition: all 0.1s; }
+        .num-btn { height: 42px; border: 1px solid #bbdefb; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #555; font-weight: 500; font-size: 1.1rem; }
         .num-btn.missing { background: var(--error-color); color: white; border-color: var(--error-color); font-weight: bold; transform: scale(1.05); }
-        .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 16px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; font-size: 1.1rem; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 16px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; font-size: 1.1rem; border: none; }
         .all-clear-msg { color: var(--success-color); font-weight: bold; text-align: center; display: none; margin: 10px 0; font-size: 1.2rem; }
         .fab-refresh { position: fixed; bottom: 20px; right: 20px; background: var(--primary-color); color: white; width: 56px; height: 56px; border-radius: 50%; border: none; font-size: 26px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .loading { text-align: center; padding: 40px; color: #666; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -49,26 +48,18 @@
     </div>
 </div>
 
-<div class="container" id="mainContainer">
-    <div class="loading">正在讀取資料庫...</div>
-</div>
-<button class="fab-refresh" onclick="location.reload()" title="更新資料">↻</button>
+<div class="container" id="mainContainer">正在讀取資料庫...</div>
+<button class="fab-refresh" onclick="location.reload()">↻</button>
 
 <script>
-    // ★ 核心設定區 ★
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
-    // 欄位 ID 對照表
     const entryIds = {
-        date: 'entry.1279670059', 
-        period: 'entry.1620291828',
-        progress: 'entry.244862663', 
-        homework: 'entry.1001982669',
-        quiz: 'entry.476700209', 
-        note: 'entry.1079052023',
-        item: 'entry.1450418126', 
-        missing: 'entry.551581621'
+        date: 'entry.1279670059', period: 'entry.1620291828',
+        progress: 'entry.244862663', homework: 'entry.1001982669',
+        quiz: 'entry.476700209', note: 'entry.1079052023',
+        item: 'entry.1450418126', missing: 'entry.551581621'
     };
 
     const timetable = {
@@ -88,13 +79,7 @@
     function fetchData() {
         Papa.parse(csvUrl, {
             download: true, header: true, skipEmptyLines: true,
-            complete: (results) => {
-                g_rawRecords = results.data;
-                render();
-            },
-            error: (err) => {
-                document.getElementById('mainContainer').innerHTML = '<div style="text-align:center;color:red;">讀取失敗，請檢查網路或 CSV 連結。</div>';
-            }
+            complete: (results) => { g_rawRecords = results.data; render(); }
         });
     }
 
@@ -150,92 +135,83 @@
         
         const day = g_currentDate.getDay();
         const classes = timetable[day] || [];
-        
-        if(classes.length === 0) { 
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">☕ 今天沒有排課，好好休息！</div>'; 
-            return; 
-        }
+        if(classes.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">☕ 今天沒有排課。</div>'; return; }
 
         container.innerHTML = '';
         classes.forEach(c => {
             const id = `${dateStr}-${c.p}`; 
             
-            // Pro版邏輯：只抓同班級紀錄
             const history = g_rawRecords.filter(r => {
                 const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
                 return rClass === c.c && r['日期'] <= dateStr; 
             }).sort((a,b) => b['日期'].localeCompare(a['日期']) || b['節次'] - a['節次']);
             
-            const displayRow = history[0]; // 黃色區塊：永遠顯示最新一筆（可能是今天剛填的）
+            const displayRow = history[0]; 
 
-            // ★ 核心修改：決定「檢查按鈕」要抓哪一天的作業 ★
+            // ★ 智慧追蹤：找出最後一次有勾選「缺交」的紀錄，顯示它是哪項作業
+            let missingInfo = "無";
             let checkRow = displayRow;
-            let checkTitle = "上次作業";
-
-            // 如果最新這筆紀錄是「今天」，代表我剛上完課填完表
-            // 那麼下方的檢查按鈕，應該要顯示「上一堂課 (index 1)」的作業，因為那才是今天要收的
-            if (displayRow && displayRow['日期'] === dateStr && history.length > 1) {
-                checkRow = history[1]; // 改抓上一筆
-                checkTitle = `上次作業 (${checkRow['日期'].slice(5)})`;
+            
+            if (displayRow) {
+                // 如果最新這筆沒缺交，往前找最近一筆有缺交的
+                const lastMissingRow = history.find(r => parseNums(r['缺交座號']).length > 0);
+                if (lastMissingRow) {
+                    missingInfo = `<span style="color:#d32f2f; font-weight:bold;">[${lastMissingRow['檢查項目'] || '未分類'}]</span> ${lastMissingRow['缺交座號']}`;
+                    // 檢查按鈕與紅燈，對應這筆有缺交的紀錄
+                    checkRow = lastMissingRow;
+                }
             }
 
             let hwItems = [];
-            if(checkRow) {
-                // 只抓取「作業內容」來產生按鈕
-                if(checkRow['作業內容']) hwItems.push(...checkRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
+            if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
+                // 如果今天上過課了，按鈕顯示上一堂(history[1])指派的作業
+                const prevHwRow = history[1];
+                if(prevHwRow['作業內容']) hwItems.push(...prevHwRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
+            } else if (displayRow) {
+                if(displayRow['作業內容']) hwItems.push(...displayRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
             }
             hwItems = [...new Set(hwItems)].filter(s => s && s !== '無');
 
             const card = document.createElement('div');
             card.className = 'class-card';
             
-            // 缺交紅燈：預設載入 checkRow (上一筆) 的缺交紀錄，這樣才對應得到上面的按鈕
             let initialMissing = checkRow ? parseNums(checkRow['缺交座號']) : [];
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
             card.innerHTML = `
                 <div class="card-header">
                     <span>第 ${c.p} 節</span>
-                    <span class="class-name">${c.c} 班 - ${c.s || '國文'}</span>
+                    <span class="class-name">${c.c} 班</span>
                 </div>
                 <div class="card-body">
                     <div class="last-record">
-                        <h4>📅 上次紀錄 (${displayRow ? displayRow['日期'].slice(5) : '無'}) 
-                            <span style="font-size:0.8em; color:#888;">${displayRow ? (displayRow['節次']+'節') : ''}</span>
-                        </h4>
-                        <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? (displayRow['教學進度'] || '無') : '無'}</span></div>
-                        <div class="info-row" style="color:#d84315;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? (displayRow['作業內容'] || '無') : '無'}</span></div>
-                        <div class="info-row" style="color:#2e7d32;"><span class="info-label">測驗：</span><span class="info-content">${displayRow ? (displayRow['平時測驗'] || '無') : '無'}</span></div>
-                        <div class="info-row"><span class="info-label">缺交：</span><span class="info-content">${displayRow ? (displayRow['缺交座號'] || '無') : '無'}</span></div>
+                        <h4>📅 上次紀錄 (${displayRow ? displayRow['日期'].slice(5) : '無'})</h4>
+                        <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? displayRow['教學進度'] : '無'}</span></div>
+                        <div class="info-row" style="color:#d84315;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? displayRow['作業內容'] : '無'}</span></div>
+                        <div class="info-row"><span class="info-label">缺交：</span><span class="info-content">${missingInfo}</span></div>
                     </div>
                     
                     <div class="check-panel" id="panel-${id}">
-                        <span class="panel-title">🔍 檢查項目：${hwItems.length > 0 ? checkTitle : '無待檢查作業'}</span>
-                        
+                        <span class="panel-title">🔍 檢查項目：${hwItems.length > 0 ? '上次作業' : '無待辦'}</span>
                         <div class="hw-chips" id="chips-${id}">
                             ${hwItems.map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
                             <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
-                        
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點選上方按鈕或手動輸入..." oninput="updateLink('${id}')">
-                        
-                        <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
-                        
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="手動輸入項目..." oninput="updateLink('${id}')">
+                        <div class="all-clear-msg" id="msg-${id}">🎉 全數繳清！</div>
                         <div class="number-grid">
                             ${Array.from({length:40}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
                             `).join('')}
                         </div>
                     </div>
-                    
-                    <a href="#" target="_blank" class="btn-submit" id="btn-${id}" onclick="this.innerText='✅ 已開啟表單';">🚀 填寫進度</a>
+                    <a href="#" target="_blank" class="btn-submit" id="btn-${id}">🚀 填寫進度</a>
                 </div>
             `;
             container.appendChild(card);
             updateLink(id);
         });
     }
-
     fetchData();
 </script>
 </body>
