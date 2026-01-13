@@ -12,9 +12,9 @@
             --card-bg: #ffffff;
             --text-main: #333;
             --text-sub: #666;
-            --accent-color: #d84315;
-            /* 已填寫後的顏色 (深紫色) */
-            --clicked-color: #8e44ad; 
+            --accent-color: #d84315;    /* 上課中的顏色 (橘紅) */
+            --break-color: #f39c12;     /* 剛下課的顏色 (橘黃) */
+            --clicked-color: #8e44ad;   /* 已填寫的顏色 (深紫) */
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -81,10 +81,15 @@
             transform: translateY(-2px);
         }
         
-        /* 當這節課正在上課時的樣式 */
-        .class-card.active-now {
+        /* 狀態樣式：上課中 */
+        .class-card.status-active {
             border-left-color: var(--accent-color);
             box-shadow: 0 6px 15px rgba(216, 67, 21, 0.15);
+        }
+        /* 狀態樣式：剛下課 */
+        .class-card.status-break {
+            border-left-color: var(--break-color);
+            box-shadow: 0 6px 15px rgba(243, 156, 18, 0.15);
         }
 
         .card-header {
@@ -130,6 +135,13 @@
 
         .live-text {
             color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        /* 剛下課的文字顏色 */
+        .break-text {
+            color: var(--break-color);
             font-weight: bold;
             font-size: 1rem;
             white-space: nowrap;
@@ -192,19 +204,27 @@
             background-color: #36527a;
         }
         
-        /* 正在上課時的按鈕顏色 */
-        .active-now .btn-add {
+        /* 上課中：按鈕橘紅 */
+        .status-active .btn-add {
              background-color: var(--accent-color);
         }
-        .active-now .btn-add:hover {
+        .status-active .btn-add:hover {
              background-color: #bf360c;
         }
 
-        /* 已填寫後的樣式 (紫色) - 優先權最高 */
+        /* 剛下課：按鈕橘黃 */
+        .status-break .btn-add {
+             background-color: var(--break-color);
+        }
+        .status-break .btn-add:hover {
+             background-color: #d35400;
+        }
+
+        /* 已填寫：按鈕紫色 (優先權最高) */
         .btn-add.clicked {
             background-color: var(--clicked-color) !important;
             box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
-            pointer-events: none; /* 填寫完後禁止再次點擊 */
+            pointer-events: none; 
             opacity: 0.9;
         }
 
@@ -263,7 +283,6 @@
             transform: scale(0.9);
         }
         
-        /* 重新整理時的旋轉動畫 */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -389,8 +408,7 @@
 
     function reloadData() {
         const btn = document.querySelector('.fab-refresh');
-        btn.classList.add('spinning'); // 加入旋轉動畫
-        
+        btn.classList.add('spinning');
         fetchData(function() {
             setTimeout(() => {
                 btn.classList.remove('spinning');
@@ -399,7 +417,6 @@
     }
 
     function fetchData(callback) {
-        // 在每次抓取新資料時，加入時間戳記防止快取
         const timestamp = new Date().getTime();
         const freshUrl = `${csvUrl}&t=${timestamp}`;
 
@@ -423,28 +440,21 @@
     function getCourseObjByDateAndPeriod(dateStr, period) {
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj)) return null;
-        
         const dayOfWeek = dateObj.getDay();
         if (!timetable[dayOfWeek]) return null;
-        
         const course = timetable[dayOfWeek].find(c => c.period == period);
         return course ? course : null;
     }
 
     function processData() {
         g_classRecords = {}; 
-        
         g_csvData.forEach(row => {
             const date = row['日期']; 
             const period = row['節次']; 
-            
             if (date && period) {
                 const courseObj = getCourseObjByDateAndPeriod(date, period);
-                
                 if (courseObj) {
                     const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
-                    
-                    // 找出該課程「最新」的一筆紀錄
                     if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
                         g_classRecords[uniqueKey] = row;
                     }
@@ -453,39 +463,43 @@
         });
     }
 
-    function checkIsCurrentPeriod(period) {
+    // ★★★ 核心修改：判斷現在是「上課中」、「剛下課」還是「其他」 ★★★
+    function getPeriodStatus(period) {
         const now = new Date();
         const isToday = g_currentDate.toDateString() === now.toDateString();
-        if (!isToday) return false;
+        if (!isToday) return null; // 不是今天，沒有狀態
 
-        if (!periodTimes[period]) return false;
+        if (!periodTimes[period]) return null;
 
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
         const [startH, startM] = periodTimes[period].start.split(':').map(Number);
         const startMinutes = startH * 60 + startM;
-
         const [endH, endM] = periodTimes[period].end.split(':').map(Number);
         const endMinutes = endH * 60 + endM;
-        
-        // ★★★ 關鍵修改：下課後延長 15 分鐘狀態 ★★★
-        const extendMinutes = 15;
 
-        return currentMinutes >= startMinutes && currentMinutes <= (endMinutes + extendMinutes);
+        // 1. 正在上課中
+        if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+            return 'active';
+        }
+
+        // 2. 剛下課 (下課後 10 分鐘內)
+        const breakBuffer = 10; 
+        if (currentMinutes > endMinutes && currentMinutes <= (endMinutes + breakBuffer)) {
+            return 'break';
+        }
+
+        return null; // 其他時間
     }
 
     function renderSchedule() {
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
-        
         const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
         dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
 
         container.innerHTML = '';
-
         const dayOfWeek = g_currentDate.getDay();
         
-        // 取得今日日期的標準字串 (YYYY-MM-DD)
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
@@ -504,27 +518,37 @@
             const lastRecord = g_classRecords[uniqueKey];
             const formLink = `${formBaseUrl}&${entryIds.date}=${currentDateStr}&${entryIds.period}=${course.period}`;
 
-            const isLive = checkIsCurrentPeriod(course.period);
-            const activeClass = isLive ? 'active-now' : '';
+            // ★★★ 取得目前狀態 (active / break / null) ★★★
+            const status = getPeriodStatus(course.period);
+            
+            // 設定 CSS Class
+            let statusClass = '';
+            if (status === 'active') statusClass = 'status-active';
+            if (status === 'break') statusClass = 'status-break';
 
-            // ★★★ 跨載具同步邏輯 ★★★
-            // 檢查這堂課最新的紀錄日期，是否等於看板目前顯示的日期
+            // 檢查是否已填寫
             let isDoneToday = false;
             if (lastRecord && lastRecord['日期'] === currentDateStr) {
                 isDoneToday = true;
             }
 
-            // 根據是否已填寫，決定按鈕樣式
+            // 按鈕與狀態文字邏輯
             let btnClass = 'btn-add';
-            let btnText = isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度';
+            let btnText = '✏️ 填寫進度';
+
+            // 如果正在上課或剛下課，按鈕顯示「立即填寫」
+            if (status === 'active' || status === 'break') {
+                btnText = '🚀 立即填寫進度';
+            }
             
+            // 如果已完成，變成紫色 (優先權最高)
             if (isDoneToday) {
-                btnClass = 'btn-add clicked'; // 紫色樣式
+                btnClass = 'btn-add clicked';
                 btnText = '✅ 本日進度已更新';
             }
 
             const card = document.createElement('div');
-            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${activeClass}`;
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${statusClass}`;
             
             let recordHtml = '';
             if (lastRecord) {
@@ -563,15 +587,25 @@
                 `;
             }
 
+            // ★★★ 產生狀態標籤 HTML (上課中 vs 剛下課) ★★★
+            let statusBadgeHtml = '';
+            if (status === 'active') {
+                statusBadgeHtml = `
+                    <div class="live-indicator-group">
+                        <span class="live-text">✨ 上課中</span>
+                    </div>`;
+            } else if (status === 'break') {
+                statusBadgeHtml = `
+                    <div class="live-indicator-group">
+                        <span class="break-text">☕ 剛下課</span>
+                    </div>`;
+            }
+
             card.innerHTML = `
                 <div class="card-header">
                     <div class="header-left">
                         <span class="period-badge">第 ${course.period} 節</span>
-                        ${isLive ? `
-                            <div class="live-indicator-group">
-                                <span class="live-text">✨ 上課中/剛下課</span>
-                            </div>
-                        ` : ''}
+                        ${statusBadgeHtml}
                     </div>
                     <span class="class-title">${course.class} 班 - ${course.subject}</span>
                 </div>
