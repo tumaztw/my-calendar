@@ -7,14 +7,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
-            --primary-color: #4a6fa5;   /* 正常藍色 */
+            --primary-color: #4a6fa5;
             --bg-color: #f4f7f6;
             --card-bg: #ffffff;
             --text-main: #333;
             --text-sub: #666;
-            --accent-color: #d84315;    /* 上課中的顏色 (橘紅) */
-            --break-color: #f39c12;     /* 剛下課的顏色 (橘黃) */
-            --clicked-color: #8e44ad;   /* 已填寫的顏色 (深紫) */
+            --accent-color: #d84315;
+            /* 已填寫後的顏色 (深紫色) */
+            --clicked-color: #8e44ad; 
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -81,15 +81,10 @@
             transform: translateY(-2px);
         }
         
-        /* 狀態樣式：上課中 */
-        .class-card.status-active {
+        /* 當這節課正在上課時的樣式 */
+        .class-card.active-now {
             border-left-color: var(--accent-color);
             box-shadow: 0 6px 15px rgba(216, 67, 21, 0.15);
-        }
-        /* 狀態樣式：剛下課 */
-        .class-card.status-break {
-            border-left-color: var(--break-color);
-            box-shadow: 0 6px 15px rgba(243, 156, 18, 0.15);
         }
 
         .card-header {
@@ -119,38 +114,10 @@
             display: inline-flex;
             align-items: center;
             flex-shrink: 0;
-            transition: all 0.3s ease;
         }
 
-        /* 標籤閃爍動畫 Keyframes */
-        @keyframes badge-pulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(216, 67, 21, 0.7);
-            }
-            50% {
-                transform: scale(1.1); /* 稍微放大 */
-                box-shadow: 0 0 15px rgba(216, 67, 21, 0.5); /* 光暈 */
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(216, 67, 21, 0);
-            }
-        }
-
-        /* 當狀態是上課中時，套用閃爍動畫並變色 */
-        .status-active .period-badge {
-            background-color: var(--accent-color);
-            animation: badge-pulse 1.5s infinite ease-in-out;
-        }
-
-        /* 當狀態是剛下課時，標籤變為橘黃色 (不閃爍) */
-        .status-break .period-badge {
-            background-color: var(--break-color);
-        }
-
-        /* 文字跳動動畫 */
-        @keyframes text-bounce {
+        /* 跳動動畫 */
+        @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
         }
@@ -158,17 +125,11 @@
         .live-indicator-group {
             display: inline-flex;
             align-items: center;
-            animation: text-bounce 1.5s infinite ease-in-out;
+            animation: bounce 1.5s infinite ease-in-out;
         }
 
         .live-text {
             color: var(--accent-color);
-            font-weight: bold;
-            font-size: 1rem;
-            white-space: nowrap;
-        }
-        .break-text {
-            color: var(--break-color);
             font-weight: bold;
             font-size: 1rem;
             white-space: nowrap;
@@ -230,29 +191,20 @@
         .btn-add:hover {
             background-color: #36527a;
         }
-        
-        /* 上課中：按鈕橘紅 */
-        .status-active .btn-add {
+        .active-now .btn-add {
              background-color: var(--accent-color);
         }
-        .status-active .btn-add:hover {
+        .active-now .btn-add:hover {
              background-color: #bf360c;
         }
 
-        /* 剛下課：按鈕橘黃 */
-        .status-break .btn-add {
-             background-color: var(--break-color);
-        }
-        .status-break .btn-add:hover {
-             background-color: #d35400;
-        }
-
-        /* 已填寫：按鈕紫色 (優先權最高) */
+        /* 已點擊後的樣式 (紫色) */
         .btn-add.clicked {
             background-color: var(--clicked-color) !important;
             box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
-            pointer-events: none; 
-            opacity: 0.9;
+        }
+        .btn-add.clicked:hover {
+            background-color: #732d91 !important;
         }
 
         .loading {
@@ -310,6 +262,7 @@
             transform: scale(0.9);
         }
         
+        /* 重新整理時的旋轉動畫 */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -366,4 +319,257 @@
     // ==========================================
     // ★ 設定區
     // ==========================================
-    const csvUrl =
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
+    const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
+    
+    const entryIds = {
+        date: 'entry.1279670059',
+        period: 'entry.1620291828'
+    };
+
+    const periodTimes = {
+        1: { start: '08:15', end: '09:05' },
+        2: { start: '09:15', end: '10:00' },
+        3: { start: '10:10', end: '10:55' },
+        4: { start: '11:05', end: '11:50' },
+        5: { start: '13:30', end: '14:15' },
+        6: { start: '14:25', end: '15:10' },
+        7: { start: '15:20', end: '16:05' },
+        8: { start: '16:15', end: '17:00' } 
+    };
+
+    const timetable = {
+        1: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 2, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' }
+        ],
+        2: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 3, class: '109', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '116', subject: '閱讀指導' }
+        ],
+        3: [
+            { period: 2, class: '109', subject: '國語文' },
+            { period: 3, class: '116', subject: '國語文' },
+            { period: 7, class: '117', subject: '國語文' }
+        ],
+        4: [
+            { period: 1, class: '109', subject: '國語文' },
+            { period: 3, class: '117', subject: '國語文' },
+            { period: 4, class: '116', subject: '國語文' },
+            { period: 6, class: '109', subject: '閱讀指導' }
+        ],
+        5: [
+            { period: 2, class: '116', subject: '國語文' },
+            { period: 5, class: '117', subject: '國語文' },
+            { period: 7, class: '109', subject: '國語文' }
+        ]
+    };
+
+    // ==========================================
+    // ★ 程式邏輯區
+    // ==========================================
+
+    let g_currentDate = new Date();
+    let g_csvData = []; 
+    let g_classRecords = {}; 
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+    });
+
+    function changeDate(days) {
+        g_currentDate.setDate(g_currentDate.getDate() + days);
+        renderSchedule();
+    }
+
+    function reloadData() {
+        const btn = document.querySelector('.fab-refresh');
+        btn.classList.add('spinning'); // 加入旋轉動畫
+        
+        fetchData(function() {
+            setTimeout(() => {
+                btn.classList.remove('spinning');
+            }, 600);
+        });
+    }
+
+    function fetchData(callback) {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                g_csvData = results.data;
+                processData();
+                renderSchedule();
+                if (callback) callback(); 
+            },
+            error: function(err) {
+                console.error("Error:", err);
+                document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">無法讀取資料。</div>';
+                if (callback) callback();
+            }
+        });
+    }
+
+    function getCourseObjByDateAndPeriod(dateStr, period) {
+        const dateObj = new Date(dateStr);
+        if (isNaN(dateObj)) return null;
+        
+        const dayOfWeek = dateObj.getDay();
+        if (!timetable[dayOfWeek]) return null;
+        
+        const course = timetable[dayOfWeek].find(c => c.period == period);
+        return course ? course : null;
+    }
+
+    function processData() {
+        g_classRecords = {}; 
+        
+        g_csvData.forEach(row => {
+            const date = row['日期']; 
+            const period = row['節次']; 
+            
+            if (date && period) {
+                const courseObj = getCourseObjByDateAndPeriod(date, period);
+                
+                if (courseObj) {
+                    const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
+                    
+                    if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
+                        g_classRecords[uniqueKey] = row;
+                    }
+                }
+            }
+        });
+    }
+
+    // ★★★ 修改處：延長10分鐘的判斷邏輯 ★★★
+    function checkIsCurrentPeriod(period) {
+        const now = new Date();
+        const isToday = g_currentDate.toDateString() === now.toDateString();
+        if (!isToday) return false;
+
+        if (!periodTimes[period]) return false;
+
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const [startH, startM] = periodTimes[period].start.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+
+        const [endH, endM] = periodTimes[period].end.split(':').map(Number);
+        const endMinutes = endH * 60 + endM;
+
+        // 修改這裡：判斷時間是否在「開始時間」與「結束時間 + 10分鐘」之間
+        return currentMinutes >= startMinutes && currentMinutes <= (endMinutes + 10);
+    }
+
+    // 點擊按鈕後的處理函式
+    function markAsUpdated(btn) {
+        setTimeout(() => {
+            btn.innerText = "已更新為本日新進度";
+            btn.classList.add('clicked'); // 加入 CSS class 變色 (紫色)
+        }, 100);
+    }
+
+    function renderSchedule() {
+        const container = document.getElementById('scheduleContainer');
+        const dateDisplay = document.getElementById('currentDateDisplay');
+        
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        dateDisplay.textContent = g_currentDate.toLocaleDateString('zh-TW', options);
+
+        container.innerHTML = '';
+
+        const dayOfWeek = g_currentDate.getDay();
+        
+        const y = g_currentDate.getFullYear();
+        const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
+        const d = String(g_currentDate.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+
+        if (!timetable[dayOfWeek]) {
+            container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
+            return;
+        }
+
+        const todaysClasses = timetable[dayOfWeek];
+        const sortedClasses = [...todaysClasses].sort((a, b) => a.period - b.period);
+
+        sortedClasses.forEach(course => {
+            const uniqueKey = `${course.class}_${course.subject}`;
+            const lastRecord = g_classRecords[uniqueKey];
+            const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
+
+            // 這裡會呼叫新的時間判斷邏輯
+            const isLive = checkIsCurrentPeriod(course.period);
+            const activeClass = isLive ? 'active-now' : '';
+
+            const card = document.createElement('div');
+            card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${activeClass}`;
+            
+            let recordHtml = '';
+            if (lastRecord) {
+                const recordDateObj = new Date(lastRecord['日期']);
+                const days = ['日', '一', '二', '三', '四', '五', '六'];
+                const weekStr = days[recordDateObj.getDay()]; 
+                const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
+
+                recordHtml = `
+                    <div class="last-record">
+                        <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+                        <div class="record-item">
+                            <span class="record-label">進度：</span>
+                            <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">作業：</span>
+                            <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
+                        </div>
+                        <div class="record-item">
+                            <span class="record-label">提醒：</span>
+                            <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
+                        </div>
+                        ${lastRecord['平時測驗'] ? `
+                        <div class="record-item">
+                            <span class="record-label">測驗：</span>
+                            <span class="record-content">${lastRecord['平時測驗']}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+            } else {
+                recordHtml = `
+                    <div class="last-record" style="background-color: #f5f5f5; border:none; color: #888;">
+                        尚無此課程 (${course.class}${course.subject}) 的過往紀錄
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="header-left">
+                        <span class="period-badge">第 ${course.period} 節</span>
+                        ${isLive ? `
+                            <div class="live-indicator-group">
+                                <span class="live-text">✨ 上課中</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <span class="class-title">${course.class} 班 - ${course.subject}</span>
+                </div>
+                <div class="card-body">
+                    ${recordHtml}
+                    <a href="${formLink}" target="_blank" class="btn-add" onclick="markAsUpdated(this)">
+                        ${isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度'}
+                    </a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>
