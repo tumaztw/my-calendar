@@ -3,51 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (精簡版)</title>
+    <title>張老師教學進度看板 (旗艦設計版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .date-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; }
-        .nav-btn { background: white; border: 2px solid var(--primary-color); color: var(--primary-color); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; }
-        .date-display { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); }
-        .container { max-width: 800px; margin: 0 auto; padding-bottom: 60px; }
-        .class-card { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 25px; overflow: hidden; border-left: 6px solid var(--primary-color); }
-        .card-header { background-color: #eef2f7; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .card-header .class-name { font-weight: bold; font-size: 1.1rem; color: #333; }
-        .card-body { padding: 15px; }
-        .last-record { background-color: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; font-size: 0.95rem; line-height: 1.6; }
-        .last-record h4 { margin: 0 0 8px 0; color: #e65100; border-bottom: 1px dashed #ffcc80; font-size: 1rem; }
-        .info-row { display: flex; margin-bottom: 4px; align-items: flex-start; }
-        .info-label { min-width: 45px; font-weight: bold; color: #555; white-space: nowrap; }
-        .info-content { flex: 1; word-break: break-word; white-space: pre-wrap; }
-        .check-panel { background-color: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb; margin-bottom: 10px; }
-        .check-panel.all-clear { background-color: #e8f5e9; border-color: #a5d6a7; }
-        .panel-title { font-weight: bold; margin-bottom: 8px; color: #1565c0; display: block; }
-        .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; padding-bottom: 80px; }
+        .header { text-align: center; margin-bottom: 25px; }
+        .date-controls { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 15px; }
+        .nav-btn { background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: var(--primary-color); width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 20px; transition: transform 0.1s; }
+        .nav-btn:active { transform: scale(0.95); }
+        .date-display { font-size: 1.3rem; font-weight: bold; color: var(--dark-text); }
         
-        /* 藍色按鈕 (一般作業 / 當日檢查) */
-        .hw-chip { background: white; border: 1px solid #90caf9; color: #1565c0; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; }
-        .hw-chip.active { background: #1565c0; color: white; border-color: #1565c0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .container { max-width: 800px; margin: 0 auto; }
         
-        /* 紅色按鈕 (過期欠債 / 補交) */
-        .remedy-chip { border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; background: #fff5f5; }
-        .remedy-chip.active { background: var(--error-color); color: white; border-color: var(--error-color); }
+        /* ★ 卡片設計優化 ★ */
+        .class-card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; position: relative; transition: transform 0.2s; border: 1px solid #eee; }
         
-        .hw-input { width: 100%; padding: 10px; border: 1px solid #90caf9; border-radius: 4px; box-sizing: border-box; margin-bottom: 12px; font-size: 1rem; }
-        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; }
-        .num-btn { height: 42px; border: 1px solid #bbdefb; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #555; font-weight: 500; font-size: 1.1rem; }
-        .num-btn.missing { background: var(--error-color); color: white; border-color: var(--error-color); font-weight: bold; transform: scale(1.05); }
-        .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 16px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; font-size: 1.1rem; border: none; }
-        .all-clear-msg { color: var(--success-color); font-weight: bold; text-align: center; display: none; margin: 10px 0; font-size: 1.2rem; }
-        .fab-refresh { position: fixed; bottom: 20px; right: 20px; background: var(--primary-color); color: white; width: 56px; height: 56px; border-radius: 50%; border: none; font-size: 26px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        /* 上課中的特效 */
+        .class-card.active-now { border: 2px solid var(--accent-color); transform: scale(1.01); box-shadow: 0 8px 25px rgba(255, 152, 0, 0.2); }
+        .status-badge { position: absolute; top: 15px; right: 15px; background: var(--error-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: none; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4); animation: pulse 2s infinite; }
+        .class-card.active-now .status-badge { display: block; }
+
+        /* 標頭區塊：大圖示設計 */
+        .card-header { display: flex; align-items: center; padding: 0; background: white; border-bottom: 1px solid #f0f0f0; }
+        
+        /* 左側大數字區塊 */
+        .period-box { background: var(--primary-color); color: white; width: 70px; height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-right: 20px; }
+        .p-num { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+        .p-label { font-size: 0.8rem; opacity: 0.9; }
+        
+        /* 中間班級資訊 */
+        .class-info { flex: 1; padding: 15px 0; }
+        .class-title { font-size: 1.5rem; font-weight: bold; color: var(--dark-text); margin-bottom: 4px; }
+        .class-subject { color: #7f8c8d; font-size: 0.95rem; font-weight: 500; }
+
+        .card-body { padding: 20px; }
+        
+        /* 黃色紀錄區 */
+        .last-record { background-color: #fffbf2; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffe0b2; font-size: 0.95rem; line-height: 1.7; }
+        .last-record h4 { margin: 0 0 10px 0; color: #f57c00; font-size: 1rem; border-bottom: 2px solid #ffe0b2; padding-bottom: 5px; display: block; }
+        .info-row { display: flex; margin-bottom: 6px; align-items: flex-start; }
+        .info-label { min-width: 50px; font-weight: bold; color: #666; }
+        .info-content { flex: 1; color: #333; word-break: break-all; }
+
+        /* 藍色操作區 */
+        .check-panel { background-color: #f0f7ff; padding: 18px; border-radius: 12px; border: 1px solid #dbeafe; }
+        .check-panel.all-clear { background-color: #f0fdf4; border-color: #bbf7d0; }
+        .panel-title { font-weight: bold; margin-bottom: 12px; color: #1e40af; display: block; font-size: 1rem; }
+        
+        /* 按鈕樣式 */
+        .hw-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .hw-chip { background: white; border: 1px solid #bfdbfe; color: #2563eb; padding: 8px 16px; border-radius: 24px; cursor: pointer; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .hw-chip:active { transform: scale(0.95); }
+        .hw-chip.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3); }
+        
+        /* 紅色補交按鈕 */
+        .remedy-chip { border: 2px solid #fecaca; color: #dc2626; background: #fef2f2; font-weight: bold; }
+        .remedy-chip.active { background: #dc2626; color: white; border-color: #dc2626; box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3); }
+        
+        .hw-input { width: 100%; padding: 12px; border: 1px solid #bfdbfe; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-size: 1rem; outline: none; transition: border 0.2s; }
+        .hw-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 10px; }
+        .num-btn { height: 45px; border: 1px solid #e2e8f0; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #64748b; font-weight: 600; font-size: 1.1rem; transition: all 0.15s; }
+        .num-btn.missing { background: var(--error-color); color: white; border-color: var(--error-color); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4); }
+        
+        .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 18px; text-decoration: none; border-radius: 12px; font-weight: bold; margin-top: 20px; font-size: 1.1rem; border: none; box-shadow: 0 4px 10px rgba(74, 111, 165, 0.3); transition: background 0.2s; }
+        .btn-submit:hover { background: #3b5b8c; }
+        
+        .all-clear-msg { color: var(--success-color); font-weight: bold; text-align: center; display: none; margin: 15px 0; font-size: 1.3rem; }
+        
+        .fab-refresh { position: fixed; bottom: 25px; right: 25px; background: var(--primary-color); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 6px 20px rgba(74, 111, 165, 0.4); z-index: 100; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .fab-refresh:active { transform: rotate(180deg); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>張老師教學進度看板</h1>
+    <div style="font-size:0.9rem; color:#888; letter-spacing: 2px; font-weight: bold;">TEACHER DASHBOARD</div>
+    <h1 style="margin: 5px 0; color:#2c3e50;">張老師教學進度看板</h1>
     <div class="date-controls">
         <button class="nav-btn" onclick="changeDate(-1)">◀</button>
         <span class="date-display" id="dateDisplay"></span>
@@ -55,7 +91,9 @@
     </div>
 </div>
 
-<div class="container" id="mainContainer">正在讀取資料庫...</div>
+<div class="container" id="mainContainer">
+    <div style="text-align:center; padding:40px; color:#999;">正在連線至資料庫...</div>
+</div>
 <button class="fab-refresh" onclick="location.reload()">↻</button>
 
 <script>
@@ -70,12 +108,25 @@
         item: 'entry.1450418126', missing: 'entry.551581621'
     };
 
+    // 課表 (1=週一 ... 5=週五)
     const timetable = {
         1: [{p:1, c:'109'}, {p:2, c:'117'}, {p:4, c:'116'}],
         2: [{p:2, c:'116'}, {p:3, c:'109'}, {p:5, c:'117'}, {p:7, c:'116', s:'閱讀'}],
         3: [{p:2, c:'109'}, {p:3, c:'116'}, {p:7, c:'117'}],
         4: [{p:1, c:'109'}, {p:3, c:'117'}, {p:4, c:'116'}, {p:6, c:'109', s:'閱讀'}],
         5: [{p:2, c:'116'}, {p:5, c:'117'}, {p:7, c:'109'}]
+    };
+
+    // 鐘聲時間表 (用來判斷現在是否上課中)
+    const bellSchedule = {
+        1: {s: "08:10", e: "09:00"},
+        2: {s: "09:10", e: "10:00"},
+        3: {s: "10:10", e: "11:00"},
+        4: {s: "11:10", e: "12:00"},
+        5: {s: "13:30", e: "14:15"},
+        6: {s: "14:25", e: "15:10"},
+        7: {s: "15:20", e: "16:05"},
+        8: {s: "16:15", e: "17:00"}
     };
 
     let g_currentDate = new Date();
@@ -90,6 +141,26 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => { g_rawRecords = results.data; render(); }
         });
+    }
+
+    // 判斷該節次現在是否「上課中」
+    function checkActive(period) {
+        // 如果看板日期不是今天，就不顯示上課中
+        const today = new Date();
+        if (g_currentDate.toDateString() !== today.toDateString()) return false;
+
+        const time = bellSchedule[period];
+        if (!time) return false;
+        
+        const now = new Date();
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        
+        const [sh, sm] = time.s.split(':').map(Number);
+        const [eh, em] = time.e.split(':').map(Number);
+        const startMins = sh * 60 + sm;
+        const endMins = eh * 60 + em;
+
+        return currentMins >= startMins && currentMins <= endMins;
     }
 
     function getClassByDateAndPeriod(dateStr, period) {
@@ -113,7 +184,6 @@
         const p = id.split('-').pop(); 
         const btn = document.getElementById(`btn-${id}`);
         btn.href = `${formUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${p}&${entryIds.item}=${encodeURIComponent(item)}&${entryIds.missing}=${encodeURIComponent(missing)}`;
-        
         refreshGrid(id);
     }
 
@@ -121,7 +191,6 @@
         const currentSet = g_selectedMissing[id] || new Set();
         const grid = document.querySelector(`#panel-${id} .number-grid`);
         if(!grid) return;
-        
         const msg = document.getElementById(`msg-${id}`);
         const panel = document.getElementById(`panel-${id}`);
         if(currentSet.size === 0) { msg.style.display = 'block'; panel.classList.add('all-clear'); }
@@ -148,11 +217,9 @@
 
         document.querySelectorAll(`#chips-${id} .hw-chip`).forEach(c => {
             const fullText = c.innerText;
-            // 比對按鈕文字是否與輸入框內容相符
             c.classList.toggle('active', fullText === txt);
         });
 
-        // 如果是「補：...」的按鈕，要去掉前綴再去 Map 找資料
         let lookupName = txt;
         if (txt.startsWith("補：")) {
             lookupName = txt.substring(2);
@@ -161,29 +228,27 @@
         if (g_itemMissingMap[id] && g_itemMissingMap[id][lookupName]) {
              g_selectedMissing[id] = new Set(g_itemMissingMap[id][lookupName].nums);
         } else {
-             // 找不到就清空 (代表是新作業，或是已清空)
              g_selectedMissing[id] = new Set();
         }
-
         updateLink(id);
     }
 
     function render() {
         const container = document.getElementById('mainContainer');
-        const dateStr = g_currentDate.toISOString().split('T')[0]; // 當前看板日期
+        const dateStr = g_currentDate.toISOString().split('T')[0]; 
         document.getElementById('dateDisplay').innerText = g_currentDate.toLocaleDateString('zh-TW', {month:'long', day:'numeric', weekday:'long'});
         
         const day = g_currentDate.getDay();
         const classes = timetable[day] || [];
-        if(classes.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">☕ 今天沒有排課。</div>'; return; }
+        if(classes.length === 0) { container.innerHTML = '<div style="text-align:center; padding:60px; color:#888;">☕ 今天沒有排課，好好休息！</div>'; return; }
 
         container.innerHTML = '';
         g_itemMissingMap = {}; 
 
         classes.forEach(c => {
             const id = `${dateStr}-${c.p}`; 
-            
-            // 找出該班歷史紀錄
+            const isActive = checkActive(c.p); // 檢查是否上課中
+
             const history = g_rawRecords.filter(r => {
                 const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
                 return rClass === c.c && r['日期'] <= dateStr; 
@@ -191,71 +256,57 @@
             
             const displayRow = history[0]; 
 
-            // ★ 建立全歷史欠債清單 (Map)
+            // 建立全歷史欠債清單
             let classOutstanding = {}; 
-            
             [...history].reverse().forEach(r => {
                 const item = r['檢查項目'];
                 const nums = parseNums(r['缺交座號']);
                 const rDate = r['日期'];
-                
-                if (item) {
-                    classOutstanding[item] = { nums: nums, date: rDate };
-                }
+                if (item) classOutstanding[item] = { nums: nums, date: rDate };
             });
 
             g_itemMissingMap[id] = classOutstanding;
 
-            // ★ 區分按鈕類型：藍色(今日/新) vs 紅色(過期)
+            // 區分按鈕類型
             let blueButtons = new Set();
             let redButtons = [];
 
-            // 1. 處理歷史欠債 (Outstanding)
             Object.keys(classOutstanding).forEach(item => {
                 const data = classOutstanding[item];
                 if (data.nums.length > 0) {
-                    // 關鍵判斷：這筆欠債是「今天」登記的嗎？
                     if (data.date === dateStr) {
-                        // 是今天登記的 -> 保持藍色 (Normal)
-                        blueButtons.add(item);
+                        blueButtons.add(item); // 藍色: 今日登記
                     } else {
-                        // 是過去登記的 -> 變成紅色 (Remedy)
-                        redButtons.push({ name: item, label: `補：${item}` });
+                        redButtons.push({ name: item, label: `補：${item}` }); // 紅色: 歷史欠債
                     }
                 }
             });
 
-            // 2. 處理新指派/上一次指派的作業 (加入藍色清單)
             let rawHwList = [];
-            // 如果今天已填進度，抓上一堂的指派作業
             if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
                 if(history[1]['作業內容']) rawHwList.push(...history[1]['作業內容'].split(/[、\n,，]/));
             } else if (displayRow) {
-                // 如果今天還沒填，抓最新一筆指派作業
                 if(displayRow['作業內容']) rawHwList.push(...displayRow['作業內容'].split(/[、\n,，]/));
             }
             
             rawHwList.forEach(s => {
                 const cleanName = s.trim();
-                // 只有當它不在「紅色清單」裡時，才加到藍色清單 (避免重複)
                 const isRemedy = redButtons.some(rb => rb.name === cleanName);
                 if(cleanName && cleanName !== '無' && !isRemedy) {
                     blueButtons.add(cleanName);
                 }
             });
 
-            // 預設載入邏輯：優先載入第一個紅色補交項目
+            // 預設載入邏輯
             let initialLoadItem = '';
             let initialMissing = [];
-            
             if (redButtons.length > 0) {
                 initialLoadItem = redButtons[0].label;
                 initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
             }
-            
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
-            // 構建紅字提醒字串 (Yellow Box)
+            // 構建紅字提醒字串
             let missingSummary = [];
             redButtons.forEach(btn => {
                 const count = classOutstanding[btn.name].nums.length;
@@ -266,22 +317,28 @@
                      missingSummary.push(`<span>[${name}] ${classOutstanding[name].nums.length}人</span>`);
                 }
             });
-            
             let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
 
             const card = document.createElement('div');
-            card.className = 'class-card';
+            card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
             card.innerHTML = `
+                <div class="status-badge">🔴 上課中</div>
                 <div class="card-header">
-                    <span>第 ${c.p} 節</span>
-                    <span class="class-name">${c.c} 班</span>
+                    <div class="period-box">
+                        <div class="p-num">${c.p}</div>
+                        <div class="p-label">節</div>
+                    </div>
+                    <div class="class-info">
+                        <div class="class-title">${c.c} 班</div>
+                        <div class="class-subject">${c.s || '國文'}</div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="last-record">
                         <h4>📅 上次紀錄 (${displayRow ? displayRow['日期'].slice(5) : '無'})</h4>
                         <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? displayRow['教學進度'] : '無'}</span></div>
-                        <div class="info-row" style="color:#d84315;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? displayRow['作業內容'] : '無'}</span></div>
+                        <div class="info-row" style="color:#f57c00;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? displayRow['作業內容'] : '無'}</span></div>
                         <div class="info-row"><span class="info-label">欠繳：</span><span class="info-content">${missingInfoStr}</span></div>
                     </div>
                     
@@ -290,8 +347,9 @@
                         <div class="hw-chips" id="chips-${id}">
                             ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.label}')">${btn.label}</div>`).join('')}
                             ${[...blueButtons].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
+                            <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕自動帶入..." oninput="updateLink('${id}')" value="${initialLoadItem}">
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadItem}">
                         <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
                         <div class="number-grid">
                             ${Array.from({length:40}, (_,i)=>i+1).map(n => `
