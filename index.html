@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (日期標示版)</title>
+    <title>張老師教學進度看板 (智慧顯示版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
@@ -48,16 +48,50 @@
         
         /* 按鈕樣式 */
         .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .hw-chip { background: white; border: 1px solid #bfdbfe; color: #2563eb; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+        .hw-chip { 
+            background: white; border: 1px solid #bfdbfe; color: #2563eb; 
+            padding: 5px 12px; border-radius: 20px; cursor: pointer; 
+            font-size: 0.9rem; font-weight: 500; transition: all 0.2s; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03); 
+        }
         .hw-chip:active { transform: scale(0.95); }
-        .hw-chip.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
         
-        /* 紅色補交按鈕 */
-        .remedy-chip { border: 1px solid #fecaca; color: #dc2626; background: #fef2f2; font-weight: bold; }
-        .remedy-chip.active { background: #dc2626; color: white; border-color: #dc2626; box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3); }
+        /* 選中狀態 (深藍背景) */
+        .hw-chip.active { 
+            background: #2563eb; color: white; border-color: #2563eb; 
+            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); 
+        }
+
+        /* 紅色警示狀態 (有缺交時) */
+        .hw-chip.missing-alert {
+            color: #dc2626; border-color: #fecaca; background-color: #fef2f2;
+            font-weight: bold;
+        }
+        /* 紅色且被選中 */
+        .hw-chip.missing-alert.active {
+            background-color: #dc2626; color: white; border-color: #dc2626;
+        }
+
+        /* 隱藏輸入框 */
+        .hw-input-hidden { display: none; }
         
-        /* 座號區 */
-        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); gap: 6px; }
+        /* 座號區 - 預設隱藏 (display: none) */
+        .number-grid { 
+            display: none; /* 關鍵修改：預設隱藏 */
+            grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); 
+            gap: 6px; margin-top: 15px; 
+            padding-top: 15px; border-top: 1px dashed #cbd5e1;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        /* 顯示時的樣式 */
+        .number-grid.show { display: grid; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .num-btn { height: 35px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; color: #64748b; font-weight: 600; font-size: 1rem; transition: all 0.15s; }
         .num-btn.missing { background: var(--error-color); color: white; border-color: var(--error-color); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(231, 76, 60, 0.4); }
         
@@ -91,6 +125,10 @@
 <button class="fab-refresh" onclick="location.reload()">↻</button>
 
 <script>
+    // ★★★ 設定區 ★★★
+    const studentCount = 35; // 已設定為 35
+    // ★★★★★★★★★★★
+
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
@@ -204,18 +242,37 @@
         const s = g_selectedMissing[id];
         if(s.has(n)) { s.delete(n); }
         else { s.add(n); }
+        
+        // ★ 新增功能：即時更新按鈕顏色 (若有缺交者，按鈕變紅)
+        const activeChip = document.querySelector(`#chips-${id} .hw-chip.active`);
+        if (activeChip) {
+            if (s.size > 0) {
+                activeChip.classList.add('missing-alert');
+            } else {
+                // 只有當原本不是歷史欠債(資料庫載入)的才移除紅色
+                // 但為了簡單直觀，若清空了目前選取，就暫時移除紅色，讓老師知道目前是「0缺交」狀態
+                // (注意：若是歷史欠債，重新整理頁面後會再次變紅，符合邏輯)
+                activeChip.classList.remove('missing-alert');
+            }
+        }
+
         updateLink(id);
     }
 
     function setItem(id, rawName, displayLabel) {
         const input = document.getElementById(`in-${id}`);
-        input.value = displayLabel; // 雖然看不到，但數值會被寫入隱藏欄位
+        input.value = displayLabel;
 
-        // 更新按鈕樣式
+        // 更新按鈕樣式 (Active)
         document.querySelectorAll(`#chips-${id} .hw-chip`).forEach(c => {
             c.classList.toggle('active', c.innerText === displayLabel);
         });
 
+        // ★ 新增功能：點擊按鈕後，顯示座號表
+        const grid = document.querySelector(`#panel-${id} .number-grid`);
+        if(grid) grid.classList.add('show');
+
+        // 載入缺交名單
         if (g_itemMissingMap[id] && g_itemMissingMap[id][rawName]) {
              g_selectedMissing[id] = new Set(g_itemMissingMap[id][rawName].nums);
         } else {
@@ -257,79 +314,65 @@
 
             g_itemMissingMap[id] = classOutstanding;
 
-            let blueButtons = []; 
-            let redButtons = [];
+            let allButtons = []; // 統一管理所有按鈕
 
-            // 1. 處理歷史欠債 (Outstanding)
+            // 1. 處理歷史欠債 (Outstanding) - 只要有缺交，就是紅色
             Object.keys(classOutstanding).forEach(item => {
                 const data = classOutstanding[item];
                 if (data.nums.length > 0) {
                     const dLabel = getSimpleDate(data.date);
                     const label = `${dLabel} ${item}`;
-                    if (data.date === dateStr) {
-                        blueButtons.push({ name: item, label: label }); 
-                    } else {
-                        redButtons.push({ name: item, label: label }); 
-                    }
+                    // 標記為欠債狀態
+                    allButtons.push({ name: item, label: label, isMissing: true }); 
                 }
             });
 
-            // 2. 處理今日作業 / 上次指派 (加入藍色區)
+            // 2. 處理今日作業 / 上次指派
             let rawHwList = [];
             let targetRowDate = "";
             if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
                 if(history[1]['作業內容']) {
                     rawHwList.push(...history[1]['作業內容'].split(/[、\n,，]/));
-                    targetRowDate = history[1]['日期']; // 上次作業的日期
+                    targetRowDate = history[1]['日期'];
                 }
             } else if (displayRow) {
                 if(displayRow['作業內容']) {
                     rawHwList.push(...displayRow['作業內容'].split(/[、\n,，]/));
-                    targetRowDate = displayRow['日期']; // 這次作業的日期
+                    targetRowDate = displayRow['日期'];
                 }
             }
             
             rawHwList.forEach(s => {
                 const cleanName = s.trim();
                 if(cleanName && cleanName !== '無') {
-                    const isRemedy = redButtons.some(rb => rb.name === cleanName);
-                    const isAlreadyBlue = blueButtons.some(bb => bb.name === cleanName);
+                    // 檢查是否已存在 (避免重複)
+                    const exists = allButtons.some(b => b.name === cleanName);
                     
-                    if(!isRemedy && !isAlreadyBlue) {
+                    if(!exists) {
                         const dLabel = getSimpleDate(targetRowDate || dateStr);
-                        blueButtons.push({ name: cleanName, label: `${dLabel} ${cleanName}` });
+                        // 預設沒有缺交 (藍色)，若使用者點擊並輸入缺交，JS會即時變色
+                        allButtons.push({ name: cleanName, label: `${dLabel} ${cleanName}`, isMissing: false });
                     }
                 }
             });
 
-            // 智慧預設載入
+            // 初始化邏輯 (載入第一個有缺交的，或是第一個選項)
             let initialLoadLabel = '';
             let initialMissing = [];
+            // 優先找有缺交的
+            const missingBtn = allButtons.find(b => b.isMissing);
+            
+            // 注意：這裡我們不再預設「選中」某個按鈕，因為使用者希望座號表預設隱藏
+            // 只有當使用者「主動點擊」按鈕時，才呼叫 setItem -> 顯示座號表
+            // 因此這裡只做資料準備，不預設 g_selectedMissing
 
-            if (redButtons.length > 0) {
-                initialLoadLabel = redButtons[0].label;
-                initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
-            } else if (blueButtons.length > 0) {
-                for (let btn of blueButtons) {
-                    if (classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
-                        initialLoadLabel = btn.label;
-                        initialMissing = classOutstanding[btn.name].nums;
-                        break;
-                    }
-                }
-            }
+            if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set();
 
-            if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
-
-            // 黃色區塊顯示
+            // 產生 Summary 文字
             let missingSummary = [];
-            redButtons.forEach(btn => {
-                const count = classOutstanding[btn.name].nums.length;
-                missingSummary.push(`<span style="color:#d32f2f;">[${btn.name}] ${count}人</span>`);
-            });
-            blueButtons.forEach(btn => {
-                if(classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
-                      missingSummary.push(`<span>[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
+            allButtons.forEach(btn => {
+                if (classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
+                    missingSummary.push(`<span style="color:#d32f2f;">[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
                 }
             });
             let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
@@ -341,7 +384,7 @@
             const card = document.createElement('div');
             card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
-            // ★ 修改：輸入框改為 hidden，座號維持 35
+            // ★ 修正：使用 studentCount 變數 (35)
             card.innerHTML = `
                 <div class="status-badge">🔴 上課中</div>
                 <div class="card-header">
@@ -364,15 +407,19 @@
                     
                     <div class="check-panel" id="panel-${id}">
                         <div class="hw-chips" id="chips-${id}">
-                            ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
-                            ${blueButtons.map(btn => `<div class="hw-chip" onclick="setItem('${id}','${btn.name}', '${btn.label}')">${btn.label}</div>`).join('')}
+                            ${allButtons.map(btn => `
+                                <div class="hw-chip ${btn.isMissing ? 'missing-alert' : ''}" 
+                                     onclick="setItem('${id}','${btn.name}', '${btn.label}')">
+                                     ${btn.label}
+                                </div>
+                            `).join('')}
                         </div>
                         
-                        <input type="hidden" id="in-${id}" value="${initialLoadLabel}">
+                        <input type="hidden" id="in-${id}" value="">
                         
                         <div class="number-grid">
-                            ${Array.from({length:35}, (_,i)=>i+1).map(n => `
-                                <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
+                            ${Array.from({length: studentCount}, (_,i)=>i+1).map(n => `
+                                <div class="num-btn" onclick="toggleStudent('${id}',${n},this)">${n}</div>
                             `).join('')}
                         </div>
                     </div>
