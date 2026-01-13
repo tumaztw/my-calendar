@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (旗艦設計版)</title>
+    <title>張老師教學進度看板 (精簡旗艦版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
@@ -108,7 +108,6 @@
         item: 'entry.1450418126', missing: 'entry.551581621'
     };
 
-    // 課表 (1=週一 ... 5=週五)
     const timetable = {
         1: [{p:1, c:'109'}, {p:2, c:'117'}, {p:4, c:'116'}],
         2: [{p:2, c:'116'}, {p:3, c:'109'}, {p:5, c:'117'}, {p:7, c:'116', s:'閱讀'}],
@@ -117,7 +116,6 @@
         5: [{p:2, c:'116'}, {p:5, c:'117'}, {p:7, c:'109'}]
     };
 
-    // 鐘聲時間表 (用來判斷現在是否上課中)
     const bellSchedule = {
         1: {s: "08:10", e: "09:00"},
         2: {s: "09:10", e: "10:00"},
@@ -143,24 +141,16 @@
         });
     }
 
-    // 判斷該節次現在是否「上課中」
     function checkActive(period) {
-        // 如果看板日期不是今天，就不顯示上課中
         const today = new Date();
         if (g_currentDate.toDateString() !== today.toDateString()) return false;
-
         const time = bellSchedule[period];
         if (!time) return false;
-        
         const now = new Date();
         const currentMins = now.getHours() * 60 + now.getMinutes();
-        
         const [sh, sm] = time.s.split(':').map(Number);
         const [eh, em] = time.e.split(':').map(Number);
-        const startMins = sh * 60 + sm;
-        const endMins = eh * 60 + em;
-
-        return currentMins >= startMins && currentMins <= endMins;
+        return currentMins >= (sh * 60 + sm) && currentMins <= (eh * 60 + em);
     }
 
     function getClassByDateAndPeriod(dateStr, period) {
@@ -247,7 +237,7 @@
 
         classes.forEach(c => {
             const id = `${dateStr}-${c.p}`; 
-            const isActive = checkActive(c.p); // 檢查是否上課中
+            const isActive = checkActive(c.p); 
 
             const history = g_rawRecords.filter(r => {
                 const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
@@ -256,7 +246,6 @@
             
             const displayRow = history[0]; 
 
-            // 建立全歷史欠債清單
             let classOutstanding = {}; 
             [...history].reverse().forEach(r => {
                 const item = r['檢查項目'];
@@ -267,7 +256,6 @@
 
             g_itemMissingMap[id] = classOutstanding;
 
-            // 區分按鈕類型
             let blueButtons = new Set();
             let redButtons = [];
 
@@ -275,9 +263,9 @@
                 const data = classOutstanding[item];
                 if (data.nums.length > 0) {
                     if (data.date === dateStr) {
-                        blueButtons.add(item); // 藍色: 今日登記
+                        blueButtons.add(item); 
                     } else {
-                        redButtons.push({ name: item, label: `補：${item}` }); // 紅色: 歷史欠債
+                        redButtons.push({ name: item, label: `補：${item}` }); 
                     }
                 }
             });
@@ -306,7 +294,6 @@
             }
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
-            // 構建紅字提醒字串
             let missingSummary = [];
             redButtons.forEach(btn => {
                 const count = classOutstanding[btn.name].nums.length;
@@ -347,24 +334,5 @@
                         <div class="hw-chips" id="chips-${id}">
                             ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.label}')">${btn.label}</div>`).join('')}
                             ${[...blueButtons].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
-                            <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadItem}">
-                        <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
-                        <div class="number-grid">
-                            ${Array.from({length:40}, (_,i)=>i+1).map(n => `
-                                <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <a href="#" target="_blank" class="btn-submit" id="btn-${id}">🚀 填寫進度</a>
-                </div>
-            `;
-            container.appendChild(card);
-            updateLink(id);
-        });
-    }
-    fetchData();
-</script>
-</body>
-</html>
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊
