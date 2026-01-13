@@ -338,7 +338,7 @@
             blueButtons.forEach(btn => {
                 // 只有當確實有缺交紀錄時才顯示在上方 summary
                 if(classOutstanding[btn.name] && classOutstanding[btn.name].nums.length > 0) {
-                     missingSummary.push(`<span>[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
+                      missingSummary.push(`<span>[${btn.name}] ${classOutstanding[btn.name].nums.length}人</span>`);
                 }
             });
             let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
@@ -350,6 +350,7 @@
             const card = document.createElement('div');
             card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
+            // ★ 修改處：Array.from({length:35}) 控制座號只到 35
             card.innerHTML = `
                 <div class="status-badge">🔴 上課中</div>
                 <div class="card-header">
@@ -377,7 +378,7 @@
                         </div>
                         <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadLabel}">
                         <div class="number-grid">
-                            ${Array.from({length:40}, (_,i)=>i+1).map(n => `
+                            ${Array.from({length:35}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
                             `).join('')}
                         </div>
