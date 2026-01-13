@@ -204,7 +204,7 @@
         .btn-add.clicked {
             background-color: var(--clicked-color) !important;
             box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
-            pointer-events: none; /* 填寫完後禁止再次點擊 (可選，若想允許修改可移除此行) */
+            pointer-events: none; /* 填寫完後禁止再次點擊 */
             opacity: 0.9;
         }
 
@@ -323,7 +323,7 @@
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
     const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
-    // Google Form 欄位 ID (請確認您的 ID 是否正確)
+    // Google Form 欄位 ID
     const entryIds = {
         date: 'entry.1279670059',
         period: 'entry.1620291828'
@@ -467,8 +467,11 @@
 
         const [endH, endM] = periodTimes[period].end.split(':').map(Number);
         const endMinutes = endH * 60 + endM;
+        
+        // ★★★ 關鍵修改：下課後延長 15 分鐘狀態 ★★★
+        const extendMinutes = 15;
 
-        return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+        return currentMinutes >= startMinutes && currentMinutes <= (endMinutes + extendMinutes);
     }
 
     function renderSchedule() {
@@ -504,7 +507,7 @@
             const isLive = checkIsCurrentPeriod(course.period);
             const activeClass = isLive ? 'active-now' : '';
 
-            // ★★★ 跨載具同步邏輯核心 ★★★
+            // ★★★ 跨載具同步邏輯 ★★★
             // 檢查這堂課最新的紀錄日期，是否等於看板目前顯示的日期
             let isDoneToday = false;
             if (lastRecord && lastRecord['日期'] === currentDateStr) {
@@ -566,7 +569,7 @@
                         <span class="period-badge">第 ${course.period} 節</span>
                         ${isLive ? `
                             <div class="live-indicator-group">
-                                <span class="live-text">✨ 上課中</span>
+                                <span class="live-text">✨ 上課中/剛下課</span>
                             </div>
                         ` : ''}
                     </div>
