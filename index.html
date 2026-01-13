@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (補交強化版)</title>
+    <title>張老師教學進度看板 (無限追蹤版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
@@ -28,8 +28,8 @@
         .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
         .hw-chip { background: white; border: 1px solid #90caf9; color: #1565c0; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; }
         .hw-chip.active { background: #1565c0; color: white; border-color: #1565c0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        /* 補交按鈕專用樣式 */
-        .remedy-chip { border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; }
+        /* 紅色補交按鈕 */
+        .remedy-chip { border: 2px solid var(--error-color); color: var(--error-color); font-weight: bold; background: #fff5f5; }
         .remedy-chip.active { background: var(--error-color); color: white; border-color: var(--error-color); }
         
         .hw-input { width: 100%; padding: 10px; border: 1px solid #90caf9; border-radius: 4px; box-sizing: border-box; margin-bottom: 12px; font-size: 1rem; }
@@ -56,7 +56,7 @@
 <button class="fab-refresh" onclick="location.reload()">↻</button>
 
 <script>
-    // 請填入您的 CSV 網址
+    // 您的 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
@@ -78,6 +78,7 @@
     let g_currentDate = new Date();
     let g_rawRecords = []; 
     let g_selectedMissing = {}; 
+    let g_itemMissingMap = {}; 
 
     function changeDate(d) { g_currentDate.setDate(g_currentDate.getDate() + d); render(); }
 
@@ -109,27 +110,49 @@
         const p = id.split('-').pop(); 
         const btn = document.getElementById(`btn-${id}`);
         btn.href = `${formUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${p}&${entryIds.item}=${encodeURIComponent(item)}&${entryIds.missing}=${encodeURIComponent(missing)}`;
+        
+        refreshGrid(id);
+    }
+
+    function refreshGrid(id) {
+        const currentSet = g_selectedMissing[id] || new Set();
+        const grid = document.querySelector(`#panel-${id} .number-grid`);
+        if(!grid) return;
+        
+        const msg = document.getElementById(`msg-${id}`);
+        const panel = document.getElementById(`panel-${id}`);
+        if(currentSet.size === 0) { msg.style.display = 'block'; panel.classList.add('all-clear'); }
+        else { msg.style.display = 'none'; panel.classList.remove('all-clear'); }
+
+        grid.querySelectorAll('.num-btn').forEach(btn => {
+            const n = parseInt(btn.innerText);
+            if(currentSet.has(n)) btn.classList.add('missing');
+            else btn.classList.remove('missing');
+        });
     }
 
     function toggleStudent(id, n, el) {
         if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set();
         const s = g_selectedMissing[id];
-        if(s.has(n)) { s.delete(n); el.classList.remove('missing'); }
-        else { s.add(n); el.classList.add('missing'); }
-        
-        const msg = document.getElementById(`msg-${id}`);
-        const panel = document.getElementById(`panel-${id}`);
-        if(s.size === 0) { msg.style.display = 'block'; panel.classList.add('all-clear'); }
-        else { msg.style.display = 'none'; panel.classList.remove('all-clear'); }
+        if(s.has(n)) { s.delete(n); }
+        else { s.add(n); }
         updateLink(id);
     }
 
     function setItem(id, txt) {
         const input = document.getElementById(`in-${id}`);
         input.value = txt;
+
         document.querySelectorAll(`#chips-${id} .hw-chip`).forEach(c => {
-            c.classList.toggle('active', c.innerText === txt);
+            c.classList.toggle('active', c.innerText === txt || c.innerText === `補：${txt}`);
         });
+
+        if (g_itemMissingMap[id] && g_itemMissingMap[id][txt]) {
+             g_selectedMissing[id] = new Set(g_itemMissingMap[id][txt]);
+        } else {
+             g_selectedMissing[id] = new Set();
+        }
+
         updateLink(id);
     }
 
@@ -143,9 +166,12 @@
         if(classes.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#888;">☕ 今天沒有排課。</div>'; return; }
 
         container.innerHTML = '';
+        g_itemMissingMap = {}; 
+
         classes.forEach(c => {
             const id = `${dateStr}-${c.p}`; 
             
+            // 找出該班歷史紀錄
             const history = g_rawRecords.filter(r => {
                 const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
                 return rClass === c.c && r['日期'] <= dateStr; 
@@ -153,34 +179,80 @@
             
             const displayRow = history[0]; 
 
-            // ★ 找出最近一筆有勾選「缺交」的紀錄 (補交來源)
-            const lastMissingRow = history.find(r => parseNums(r['缺交座號']).length > 0);
-            let missingInfo = "無";
-            let remedyItem = ""; // 補交項目名稱
+            // ★ 關鍵核心：建立全歷史欠債清單 (Outstanding Map) ★
+            // 我們從舊到新掃描，這樣最新的狀態會覆蓋舊的
+            let classOutstanding = {}; // 格式: { "作業A": [1, 7], "作業B": [5] }
             
-            if (lastMissingRow) {
-                remedyItem = lastMissingRow['檢查項目'] || "上次作業";
-                missingInfo = `<span style="color:#d32f2f; font-weight:bold;">[${remedyItem}]</span> ${lastMissingRow['缺交座號']}`;
-            }
+            // 為了正確累積，我們反轉 history (變成舊 -> 新) 來處理狀態
+            [...history].reverse().forEach(r => {
+                const item = r['檢查項目'];
+                const nums = parseNums(r['缺交座號']);
+                // 如果這一筆紀錄有「檢查項目」，它就代表該項目的最新狀態
+                // 即使 nums 是空的，也代表該項目已清空，所以要覆蓋
+                if (item) {
+                    classOutstanding[item] = nums;
+                }
+            });
 
-            // ★ 生成按鈕區
-            let hwItems = [];
-            // 如果今天已經填了進度，按鈕顯示上一堂(history[1])指派的作業
+            // 將結果存入全域 Map，供按鈕點擊時使用
+            g_itemMissingMap[id] = classOutstanding;
+
+            // 準備按鈕列表
+            let buttonSet = new Set(); 
+            let remedyBtns = []; // 存放所有需要補交的項目
+
+            // 1. 找出所有還有欠債的項目 (Missing > 0)
+            Object.keys(classOutstanding).forEach(item => {
+                if (classOutstanding[item].length > 0) {
+                    remedyBtns.push({ name: item, label: `補：${item}` });
+                    // 為了讓 setItem 能找到資料，做一個映射
+                    g_itemMissingMap[id][`補：${item}`] = classOutstanding[item];
+                }
+            });
+
+            // 2. 正常作業按鈕 (本次 & 上次指派的)
+            // 為了方便，我們顯示「上一次上課指派的作業」(Blue Buttons)
+            let rawHwList = [];
             if(displayRow && displayRow['日期'] === dateStr && history.length > 1) {
-                const prevHwRow = history[1];
-                if(prevHwRow['作業內容']) hwItems.push(...prevHwRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
+                if(history[1]['作業內容']) rawHwList.push(...history[1]['作業內容'].split(/[、\n,，]/));
             } else if (displayRow) {
-                if(displayRow['作業內容']) hwItems.push(...displayRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
+                if(displayRow['作業內容']) rawHwList.push(...displayRow['作業內容'].split(/[、\n,，]/));
             }
-            hwItems = [...new Set(hwItems)].filter(s => s && s !== '無');
+            
+            rawHwList.forEach(s => {
+                const cleanName = s.trim();
+                if(cleanName && cleanName !== '無') buttonSet.add(cleanName);
+            });
+
+            // 3. 過濾：如果某個作業已經在「紅色補交區」，就不要在「藍色區」重複顯示
+            remedyBtns.forEach(btn => {
+                if (buttonSet.has(btn.name)) buttonSet.delete(btn.name);
+            });
+
+            // 預設載入邏輯：優先載入第一個紅字補交項目
+            let initialLoadItem = '';
+            let initialMissing = [];
+            
+            if (remedyBtns.length > 0) {
+                initialLoadItem = remedyBtns[0].label;
+                initialMissing = g_itemMissingMap[id][remedyBtns[0].name];
+            }
+            
+            // 初始化紅燈
+            if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
+
+            // 黃色區塊顯示資訊 (顯示最新一筆欠債資訊，或總欠債人數)
+            let missingInfo = remedyBtns.length > 0 ? 
+                `<span style="color:#e74c3c; font-weight:bold;">${remedyBtns.length} 項作業未清</span>` : "無";
+            
+            // 如果只有一項欠債，直接顯示細節
+            if (remedyBtns.length === 1) {
+                missingInfo = `<span style="color:#d32f2f;">[${remedyBtns[0].name}]</span> ${classOutstanding[remedyBtns[0].name]}`;
+            }
 
             const card = document.createElement('div');
             card.className = 'class-card';
             
-            // 紅燈對應最近一次缺交紀錄
-            let initialMissing = lastMissingRow ? parseNums(lastMissingRow['缺交座號']) : [];
-            if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
-
             card.innerHTML = `
                 <div class="card-header">
                     <span>第 ${c.p} 節</span>
@@ -195,13 +267,13 @@
                     </div>
                     
                     <div class="check-panel" id="panel-${id}">
-                        <span class="panel-title">🔍 檢查項目 / 補交登記</span>
+                        <span class="panel-title">🔍 補交 / 檢查登記</span>
                         <div class="hw-chips" id="chips-${id}">
-                            ${remedyItem ? `<div class="hw-chip remedy-chip" onclick="setItem('${id}','補：${remedyItem}')">補：${remedyItem}</div>` : ''}
-                            ${hwItems.map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
+                            ${remedyBtns.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.label}')">${btn.label}</div>`).join('')}
+                            ${[...buttonSet].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
                             <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或手動輸入..." oninput="updateLink('${id}')">
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕自動帶入..." oninput="updateLink('${id}')" value="${initialLoadItem}">
                         <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
                         <div class="number-grid">
                             ${Array.from({length:40}, (_,i)=>i+1).map(n => `
