@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (精簡旗艦版)</title>
+    <title>張老師教學進度看板 (純淨版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
@@ -44,7 +44,6 @@
 
         /* 操作區 */
         .check-panel { background-color: #f0f7ff; padding: 18px; border-radius: 12px; border: 1px solid #dbeafe; }
-        .check-panel.all-clear { background-color: #f0fdf4; border-color: #bbf7d0; }
         .panel-title { font-weight: bold; margin-bottom: 12px; color: #1e40af; display: block; font-size: 1rem; }
         
         /* 按鈕樣式 */
@@ -66,8 +65,6 @@
         
         .btn-submit { display: block; width: 100%; text-align: center; background: var(--primary-color); color: white; padding: 18px; text-decoration: none; border-radius: 12px; font-weight: bold; margin-top: 20px; font-size: 1.1rem; border: none; box-shadow: 0 4px 10px rgba(74, 111, 165, 0.3); transition: background 0.2s; }
         .btn-submit:hover { background: #3b5b8c; }
-        
-        .all-clear-msg { color: var(--success-color); font-weight: bold; text-align: center; display: none; margin: 15px 0; font-size: 1.3rem; }
         
         .fab-refresh { position: fixed; bottom: 25px; right: 25px; background: var(--primary-color); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 6px 20px rgba(74, 111, 165, 0.4); z-index: 100; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
         .fab-refresh:active { transform: rotate(180deg); }
@@ -191,11 +188,8 @@
         const currentSet = g_selectedMissing[id] || new Set();
         const grid = document.querySelector(`#panel-${id} .number-grid`);
         if(!grid) return;
-        const msg = document.getElementById(`msg-${id}`);
-        const panel = document.getElementById(`panel-${id}`);
-        if(currentSet.size === 0) { msg.style.display = 'block'; panel.classList.add('all-clear'); }
-        else { msg.style.display = 'none'; panel.classList.remove('all-clear'); }
-
+        
+        // 移除所有繳清判斷，只單純渲染按鈕狀態
         grid.querySelectorAll('.num-btn').forEach(btn => {
             const n = parseInt(btn.innerText);
             if(currentSet.has(n)) btn.classList.add('missing');
@@ -295,12 +289,23 @@
                 }
             });
 
+            // 智慧預設載入：優先紅字，否則藍字
             let initialLoadItem = '';
             let initialMissing = [];
+
             if (redButtons.length > 0) {
                 initialLoadItem = redButtons[0].label;
                 initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
+            } else {
+                for (let btnName of blueButtons) {
+                    if (classOutstanding[btnName] && classOutstanding[btnName].nums.length > 0) {
+                        initialLoadItem = btnName;
+                        initialMissing = classOutstanding[btnName].nums;
+                        break; 
+                    }
+                }
             }
+
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
             let missingSummary = [];
@@ -345,7 +350,6 @@
                             ${[...blueButtons].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
                         </div>
                         <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadItem}">
-                        <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
                         <div class="number-grid">
                             ${Array.from({length:40}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
