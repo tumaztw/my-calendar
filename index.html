@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (時間軸變色版)</title>
+    <title>張老師教學進度看板 (精簡版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
@@ -192,7 +192,6 @@
             const displayRow = history[0]; 
 
             // ★ 建立全歷史欠債清單 (Map)
-            // 格式: { "作業A": { nums: [1, 7], date: "2025-01-12" } }
             let classOutstanding = {}; 
             
             [...history].reverse().forEach(r => {
@@ -239,8 +238,6 @@
             rawHwList.forEach(s => {
                 const cleanName = s.trim();
                 // 只有當它不在「紅色清單」裡時，才加到藍色清單 (避免重複)
-                // 邏輯：如果一個作業已經變紅色欠債，就只顯示紅色；
-                // 如果是今天剛檢查的(藍色欠債)，它會已經在上面步驟被加入 blueButtons，這裡再次 add 也沒關係(Set特性)
                 const isRemedy = redButtons.some(rb => rb.name === cleanName);
                 if(cleanName && cleanName !== '無' && !isRemedy) {
                     blueButtons.add(cleanName);
@@ -252,35 +249,25 @@
             let initialMissing = [];
             
             if (redButtons.length > 0) {
-                // 如果有紅色欠債，預設顯示第一個紅色的
                 initialLoadItem = redButtons[0].label;
                 initialMissing = g_itemMissingMap[id][redButtons[0].name].nums;
-            } else if (blueButtons.size > 0 && displayRow && displayRow['日期'] === dateStr) {
-                 // 如果沒有紅色，但有藍色且今天是剛檢查完的狀態，嘗試載入今天剛檢查的紅字
-                 // 這裡需要稍微找一下今天剛檢查的是哪個項目
-                 // 簡單起見，這裡不自動載入藍色，讓老師自己點，除非老師希望。
-                 // 為了不干擾「新檢查」，藍色預設不載入紅字，保持全白讓老師開始點。
             }
             
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
             // 構建紅字提醒字串 (Yellow Box)
             let missingSummary = [];
-            // 把紅色欠債的加進去
             redButtons.forEach(btn => {
                 const count = classOutstanding[btn.name].nums.length;
                 missingSummary.push(`<span style="color:#d32f2f;">[${btn.name}] ${count}人</span>`);
             });
-            // 把藍色欠債(今日剛點的)也加進去
             blueButtons.forEach(name => {
                 if(classOutstanding[name] && classOutstanding[name].nums.length > 0) {
-                     // 只有當確實有紅字才顯示
                      missingSummary.push(`<span>[${name}] ${classOutstanding[name].nums.length}人</span>`);
                 }
             });
             
             let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
-
 
             const card = document.createElement('div');
             card.className = 'class-card';
@@ -303,7 +290,6 @@
                         <div class="hw-chips" id="chips-${id}">
                             ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.label}')">${btn.label}</div>`).join('')}
                             ${[...blueButtons].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
-                            <div class="hw-chip" onclick="setItem('${id}','全部')">全部</div>
                         </div>
                         <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕自動帶入..." oninput="updateLink('${id}')" value="${initialLoadItem}">
                         <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
