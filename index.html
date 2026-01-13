@@ -13,7 +13,7 @@
             --text-main: #333;
             --text-sub: #666;
             --accent-color: #d84315;
-            /* 新增：已填寫後的顏色 (深紫色) */
+            /* 已填寫後的顏色 (深紫色) */
             --clicked-color: #8e44ad; 
         }
         body {
@@ -191,6 +191,8 @@
         .btn-add:hover {
             background-color: #36527a;
         }
+        
+        /* 正在上課時的按鈕顏色 */
         .active-now .btn-add {
              background-color: var(--accent-color);
         }
@@ -198,15 +200,13 @@
              background-color: #bf360c;
         }
 
-        /* ▼▼▼ 新增：已點擊後的樣式 (紫色) ▼▼▼ */
+        /* 已填寫後的樣式 (紫色) - 優先權最高 */
         .btn-add.clicked {
             background-color: var(--clicked-color) !important;
-            box-shadow: inset 0 3px 5px rgba(0,0,0,0.2); /* 增加一點內陰影，感覺像按下去 */
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
+            pointer-events: none; /* 填寫完後禁止再次點擊 (可選，若想允許修改可移除此行) */
+            opacity: 0.9;
         }
-        .btn-add.clicked:hover {
-            background-color: #732d91 !important;
-        }
-        /* ▲▲▲ 新增結束 ▲▲▲ */
 
         .loading {
             text-align: center;
@@ -323,6 +323,7 @@
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
     const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
+    // Google Form 欄位 ID (請確認您的 ID 是否正確)
     const entryIds = {
         date: 'entry.1279670059',
         period: 'entry.1620291828'
@@ -398,7 +399,11 @@
     }
 
     function fetchData(callback) {
-        Papa.parse(csvUrl, {
+        // 在每次抓取新資料時，加入時間戳記防止快取
+        const timestamp = new Date().getTime();
+        const freshUrl = `${csvUrl}&t=${timestamp}`;
+
+        Papa.parse(freshUrl, {
             download: true,
             header: true,
             complete: function(results) {
@@ -439,6 +444,7 @@
                 if (courseObj) {
                     const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
                     
+                    // 找出該課程「最新」的一筆紀錄
                     if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
                         g_classRecords[uniqueKey] = row;
                     }
@@ -465,15 +471,6 @@
         return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
     }
 
-    // ★★★ 新增：點擊按鈕後的處理函式 ★★★
-    function markAsUpdated(btn) {
-        // 設定一個微小的延遲，讓連結先開啟新分頁，再變色
-        setTimeout(() => {
-            btn.innerText = "已更新為本日新進度";
-            btn.classList.add('clicked'); // 加入 CSS class 變色 (紫色)
-        }, 100);
-    }
-
     function renderSchedule() {
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
@@ -485,10 +482,11 @@
 
         const dayOfWeek = g_currentDate.getDay();
         
+        // 取得今日日期的標準字串 (YYYY-MM-DD)
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
+        const currentDateStr = `${y}-${m}-${d}`;
 
         if (!timetable[dayOfWeek]) {
             container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
@@ -501,10 +499,26 @@
         sortedClasses.forEach(course => {
             const uniqueKey = `${course.class}_${course.subject}`;
             const lastRecord = g_classRecords[uniqueKey];
-            const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
+            const formLink = `${formBaseUrl}&${entryIds.date}=${currentDateStr}&${entryIds.period}=${course.period}`;
 
             const isLive = checkIsCurrentPeriod(course.period);
             const activeClass = isLive ? 'active-now' : '';
+
+            // ★★★ 跨載具同步邏輯核心 ★★★
+            // 檢查這堂課最新的紀錄日期，是否等於看板目前顯示的日期
+            let isDoneToday = false;
+            if (lastRecord && lastRecord['日期'] === currentDateStr) {
+                isDoneToday = true;
+            }
+
+            // 根據是否已填寫，決定按鈕樣式
+            let btnClass = 'btn-add';
+            let btnText = isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度';
+            
+            if (isDoneToday) {
+                btnClass = 'btn-add clicked'; // 紫色樣式
+                btnText = '✅ 本日進度已更新';
+            }
 
             const card = document.createElement('div');
             card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${activeClass}`;
@@ -546,7 +560,6 @@
                 `;
             }
 
-            // ★★★ 修改：在 <a ... class="btn-add"> 中加入 onclick 事件 ★★★
             card.innerHTML = `
                 <div class="card-header">
                     <div class="header-left">
@@ -561,8 +574,8 @@
                 </div>
                 <div class="card-body">
                     ${recordHtml}
-                    <a href="${formLink}" target="_blank" class="btn-add" onclick="markAsUpdated(this)">
-                        ${isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度'}
+                    <a href="${formLink}" target="_blank" class="${btnClass}">
+                        ${btnText}
                     </a>
                 </div>
             `;
