@@ -13,8 +13,8 @@
             --text-main: #333;
             --text-sub: #666;
             --accent-color: #d84315;
-            /* 已填寫後的顏色 (深紫色) */
-            --clicked-color: #8e44ad; 
+            --clicked-color: #8e44ad; /* 紫色 */
+            --done-color: #6c757d;    /* 灰色 (已完成) */
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -107,8 +107,8 @@
             background-color: var(--primary-color);
             color: white;
             padding: 10px 24px;        
-            border-radius: 30px;       
-            font-size: 1.3rem;         
+            border-radius: 30px;        
+            font-size: 1.3rem;          
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15); 
             display: inline-flex;
@@ -174,6 +174,8 @@
         .record-content {
             word-break: break-word;
         }
+        
+        /* 按鈕樣式 */
         .btn-add {
             display: block;
             width: 100%;
@@ -187,6 +189,8 @@
             font-size: 1.05rem;
             transition: background 0.3s;
             cursor: pointer;
+            border: none; /* 確保沒有邊框 */
+            box-sizing: border-box;
         }
         .btn-add:hover {
             background-color: #36527a;
@@ -198,7 +202,7 @@
              background-color: #bf360c;
         }
 
-        /* 已點擊後的樣式 (紫色) */
+        /* 已點擊/已完成後的樣式 (紫色) */
         .btn-add.clicked {
             background-color: var(--clicked-color) !important;
             box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
@@ -206,6 +210,8 @@
         .btn-add.clicked:hover {
             background-color: #732d91 !important;
         }
+        
+        /* 若需要區分「資料庫已確認完成」與「剛點擊」，可在此微調，目前統一用紫色 */
 
         .loading {
             text-align: center;
@@ -227,10 +233,10 @@
         .type-reading .period-badge {
             background-color: #2e7d32;
         }
-        .type-reading .btn-add {
+        .type-reading .btn-add:not(.clicked) {
             background-color: #2e7d32;
         }
-        .type-reading .btn-add:hover {
+        .type-reading .btn-add:not(.clicked):hover {
             background-color: #1b5e20;
         }
 
@@ -262,7 +268,6 @@
             transform: scale(0.9);
         }
         
-        /* 重新整理時的旋轉動畫 */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -322,6 +327,7 @@
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
     const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
+    // Google Form 欄位 ID (請確認這些ID是否與您的Form一致)
     const entryIds = {
         date: 'entry.1279670059',
         period: 'entry.1620291828'
@@ -377,7 +383,15 @@
     let g_classRecords = {}; 
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log("網頁載入完成，開始抓取資料...");
         fetchData();
+        
+        setTimeout(() => {
+            const container = document.getElementById('scheduleContainer');
+            if(container.innerHTML.includes('正在載入')) {
+                container.innerHTML = '<div class="no-class" style="color:red;">⚠️ 讀取逾時。<br>請檢查 Google Sheet 是否已發布到網路，或按 F12 查看錯誤訊息。</div>';
+            }
+        }, 10000);
     });
 
     function changeDate(days) {
@@ -387,7 +401,7 @@
 
     function reloadData() {
         const btn = document.querySelector('.fab-refresh');
-        btn.classList.add('spinning'); // 加入旋轉動畫
+        btn.classList.add('spinning');
         
         fetchData(function() {
             setTimeout(() => {
@@ -400,15 +414,21 @@
         Papa.parse(csvUrl, {
             download: true,
             header: true,
+            skipEmptyLines: true, 
             complete: function(results) {
-                g_csvData = results.data;
-                processData();
-                renderSchedule();
+                console.log("資料抓取成功:", results.data); 
+                if (results.data && results.data.length > 0) {
+                    g_csvData = results.data;
+                    processData();
+                    renderSchedule();
+                } else {
+                    document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">讀取成功但沒有資料，請檢查 Google Sheet 內容。</div>';
+                }
                 if (callback) callback(); 
             },
             error: function(err) {
-                console.error("Error:", err);
-                document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">無法讀取資料。</div>';
+                console.error("PapaParse Error:", err);
+                document.getElementById('scheduleContainer').innerHTML = '<div class="no-class">無法讀取資料。<br>請確認網址是否正確或權限是否公開。</div>';
                 if (callback) callback();
             }
         });
@@ -429,15 +449,15 @@
         g_classRecords = {}; 
         
         g_csvData.forEach(row => {
-            const date = row['日期']; 
-            const period = row['節次']; 
+            const date = row['日期'] ? row['日期'].trim() : null; 
+            const period = row['節次'] ? row['節次'].trim() : null; 
             
             if (date && period) {
                 const courseObj = getCourseObjByDateAndPeriod(date, period);
                 
                 if (courseObj) {
                     const uniqueKey = `${courseObj.class}_${courseObj.subject}`;
-                    
+                    // 比較日期，保留最新的那筆
                     if (!g_classRecords[uniqueKey] || date > g_classRecords[uniqueKey]['日期']) {
                         g_classRecords[uniqueKey] = row;
                     }
@@ -446,7 +466,6 @@
         });
     }
 
-    // ★★★ 修改處：延長10分鐘的判斷邏輯 ★★★
     function checkIsCurrentPeriod(period) {
         const now = new Date();
         const isToday = g_currentDate.toDateString() === now.toDateString();
@@ -455,22 +474,23 @@
         if (!periodTimes[period]) return false;
 
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
         const [startH, startM] = periodTimes[period].start.split(':').map(Number);
         const startMinutes = startH * 60 + startM;
 
         const [endH, endM] = periodTimes[period].end.split(':').map(Number);
         const endMinutes = endH * 60 + endM;
 
-        // 修改這裡：判斷時間是否在「開始時間」與「結束時間 + 10分鐘」之間
         return currentMinutes >= startMinutes && currentMinutes <= (endMinutes + 10);
     }
 
-    // 點擊按鈕後的處理函式
-    function markAsUpdated(btn) {
+    // ★★★ 修改重點：點擊時，將狀態存入 Local Storage ★★★
+    function markAsUpdated(btn, storageKey) {
+        // 設定瀏覽器記憶，標記這堂課今天已填
+        localStorage.setItem(storageKey, 'true');
+
         setTimeout(() => {
-            btn.innerText = "已更新為本日新進度";
-            btn.classList.add('clicked'); // 加入 CSS class 變色 (紫色)
+            btn.innerText = "✅ 本日已填寫";
+            btn.classList.add('clicked');
         }, 100);
     }
 
@@ -488,7 +508,7 @@
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
+        const dateStr = `${y}-${m}-${d}`; // 格式：2023-10-25
 
         if (!timetable[dayOfWeek]) {
             container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
@@ -503,23 +523,41 @@
             const lastRecord = g_classRecords[uniqueKey];
             const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
-            // 這裡會呼叫新的時間判斷邏輯
             const isLive = checkIsCurrentPeriod(course.period);
             const activeClass = isLive ? 'active-now' : '';
+
+            // ★★★ 核心判斷：是否已完成 ★★★
+            // 1. 產生一個專屬於「今天+這節課」的 ID
+            const storageKey = `filled_${dateStr}_${course.class}_${course.period}`;
+            
+            // 2. 檢查 CSV 裡最新的那筆紀錄，日期是不是今天？
+            const isRecordedInCsv = (lastRecord && lastRecord['日期'] === dateStr);
+            
+            // 3. 檢查瀏覽器記憶 (Local Storage) 是不是有標記過？
+            const isClickedLocally = localStorage.getItem(storageKey) === 'true';
+
+            // 只要符合其中一個，就視為「已完成」
+            const isDone = isRecordedInCsv || isClickedLocally;
 
             const card = document.createElement('div');
             card.className = `class-card ${course.subject === '閱讀指導' ? 'type-reading' : ''} ${activeClass}`;
             
             let recordHtml = '';
+            // 顯示上次紀錄邏輯：如果今天是新的一天，顯示上次。如果 CSV 已經有今天的資料，那該筆資料就會變成「上次紀錄」，這也合理。
             if (lastRecord) {
                 const recordDateObj = new Date(lastRecord['日期']);
                 const days = ['日', '一', '二', '三', '四', '五', '六'];
                 const weekStr = days[recordDateObj.getDay()]; 
                 const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
 
+                // 如果顯示的這筆資料就是今天的，標題可以改一下，或是維持原樣
+                const titleText = (lastRecord['日期'] === dateStr) ? 
+                                  `📝 本日最新紀錄 (${shortDate})` : 
+                                  `📅 上次進度 (${shortDate} ${weekStr})`;
+
                 recordHtml = `
-                    <div class="last-record">
-                        <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
+                    <div class="last-record" style="${lastRecord['日期'] === dateStr ? 'background-color:#e8f5e9; border-color:#c8e6c9;' : ''}">
+                        <h4>${titleText}</h4>
                         <div class="record-item">
                             <span class="record-label">進度：</span>
                             <span class="record-content">${lastRecord['教學進度'] || '無'}</span>
@@ -528,7 +566,7 @@
                             <span class="record-label">作業：</span>
                             <span class="record-content">${lastRecord['作業內容'] || '無'}</span>
                         </div>
-                        <div class="record-item">
+                         <div class="record-item">
                             <span class="record-label">提醒：</span>
                             <span class="record-content">${lastRecord['課堂提醒'] || '無'}</span>
                         </div>
@@ -547,6 +585,15 @@
                 `;
             }
 
+            // 根據是否完成，決定按鈕文字與樣式
+            let btnText = isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度';
+            let btnClass = 'btn-add';
+            
+            if (isDone) {
+                btnText = '✅ 本日已填寫';
+                btnClass += ' clicked';
+            }
+
             card.innerHTML = `
                 <div class="card-header">
                     <div class="header-left">
@@ -561,8 +608,8 @@
                 </div>
                 <div class="card-body">
                     ${recordHtml}
-                    <a href="${formLink}" target="_blank" class="btn-add" onclick="markAsUpdated(this)">
-                        ${isLive ? '🚀 立即填寫進度' : '✏️ 填寫進度'}
+                    <a href="${formLink}" target="_blank" class="${btnClass}" onclick="markAsUpdated(this, '${storageKey}')">
+                        ${btnText}
                     </a>
                 </div>
             `;
