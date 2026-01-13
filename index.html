@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (精簡樣式版)</title>
+    <title>張老師教學進度看板 (智慧標題版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
@@ -38,6 +38,11 @@
         /* 紀錄區 */
         .last-record { background-color: #fffbf2; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; font-size: 0.9rem; line-height: 1.6; }
         .last-record h4 { margin: 0 0 8px 0; color: #f57c00; font-size: 0.95rem; border-bottom: 1px solid #ffe0b2; padding-bottom: 4px; display: block; }
+        
+        /* 今日進度的特別樣式 */
+        .last-record.today-record { background-color: #f0fdf4; border-color: #bbf7d0; }
+        .last-record.today-record h4 { color: #15803d; border-color: #bbf7d0; }
+
         .info-row { display: flex; margin-bottom: 4px; align-items: flex-start; }
         .info-label { min-width: 45px; font-weight: bold; color: #666; }
         .info-content { flex: 1; color: #333; word-break: break-all; }
@@ -47,7 +52,6 @@
         
         /* 按鈕樣式 - 精簡化 */
         .hw-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        /* 縮小內距與字體 */
         .hw-chip { background: white; border: 1px solid #bfdbfe; color: #2563eb; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
         .hw-chip:active { transform: scale(0.95); }
         .hw-chip.active { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
@@ -289,7 +293,6 @@
                 }
             });
 
-            // 智慧預設載入
             let initialLoadItem = '';
             let initialMissing = [];
 
@@ -320,6 +323,11 @@
             });
             let missingInfoStr = missingSummary.length > 0 ? missingSummary.join('、') : "無";
 
+            // ★ 智慧標題邏輯 ★
+            let isTodayRecord = (displayRow && displayRow['日期'] === dateStr);
+            let recordTitle = isTodayRecord ? "今日進度" : "上次紀錄";
+            let recordClass = isTodayRecord ? "today-record" : "";
+
             const card = document.createElement('div');
             card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
@@ -336,8 +344,8 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="last-record">
-                        <h4>📅 上次紀錄 (${displayRow ? displayRow['日期'].slice(5) : '無'})</h4>
+                    <div class="last-record ${recordClass}">
+                        <h4>📅 ${recordTitle} (${displayRow ? displayRow['日期'].slice(5) : '無'})</h4>
                         <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? displayRow['教學進度'] : '無'}</span></div>
                         <div class="info-row" style="color:#f57c00;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? displayRow['作業內容'] : '無'}</span></div>
                         <div class="info-row"><span class="info-label">欠繳：</span><span class="info-content">${missingInfoStr}</span></div>
