@@ -13,7 +13,7 @@
             --text-main: #333;
             --text-sub: #666;
             --accent-color: #d84315;
-            --success-color: #28a745; /* 新增：成功綠色 */
+            --success-color: #28a745; /* 成功綠色 */
         }
         body {
             font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
@@ -202,16 +202,16 @@
              background-color: #bf360c;
         }
 
-        /* ▼▼▼ 新增：已更新狀態的按鈕樣式 (綠色) ▼▼▼ */
+        /* ▼▼▼ 已更新狀態的按鈕樣式 (綠色) ▼▼▼ */
         .btn-add.updated {
-            background-color: var(--success-color) !important; /* 強制覆蓋 */
+            background-color: var(--success-color) !important; /* 強制變綠 */
             cursor: default;
             box-shadow: none;
         }
         .btn-add.updated:hover {
             transform: none; /* 已更新時不浮動 */
+            background-color: var(--success-color) !important;
         }
-        /* ▲▲▲ 新增結束 ▲▲▲ */
 
         .loading {
             text-align: center;
@@ -227,6 +227,8 @@
             color: var(--text-sub);
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
+        
+        /* 閱讀指導課的特殊顏色 */
         .type-reading {
             border-left-color: #2e7d32;
         }
@@ -240,7 +242,7 @@
             background-color: #1b5e20;
         }
 
-        /* 懸浮重新整理按鈕樣式 */
+        /* 懸浮重新整理按鈕 */
         .fab-refresh {
             position: fixed;
             bottom: 30px;
@@ -322,16 +324,22 @@
 
 <script>
     // ==========================================
-    // ★ 設定區
+    // ★ 設定區 (已整合您提供的連結)
     // ==========================================
+    
+    // 您的 Google Sheets 發布為 CSV 的連結
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv';
+    
+    // 您的 Google Form 填寫連結 (基礎網址)
     const formBaseUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
+    // 表單欄位對應 ID (從您提供的連結中提取)
     const entryIds = {
-        date: 'entry.1279670059',
-        period: 'entry.1620291828'
+        date: 'entry.1279670059',   // 日期欄位
+        period: 'entry.1620291828'  // 節次欄位
     };
 
+    // 每一節課的時間表 (用來判斷是否正在上課)
     const periodTimes = {
         1: { start: '08:15', end: '09:05' },
         2: { start: '09:15', end: '10:00' },
@@ -343,30 +351,31 @@
         8: { start: '16:15', end: '17:00' } 
     };
 
+    // 課表設定 (星期幾: [課程內容])
     const timetable = {
-        1: [
+        1: [ // 星期一
             { period: 1, class: '109', subject: '國語文' },
             { period: 2, class: '117', subject: '國語文' },
             { period: 4, class: '116', subject: '國語文' }
         ],
-        2: [
+        2: [ // 星期二
             { period: 2, class: '116', subject: '國語文' },
             { period: 3, class: '109', subject: '國語文' },
             { period: 5, class: '117', subject: '國語文' },
             { period: 7, class: '116', subject: '閱讀指導' }
         ],
-        3: [
+        3: [ // 星期三
             { period: 2, class: '109', subject: '國語文' },
             { period: 3, class: '116', subject: '國語文' },
             { period: 7, class: '117', subject: '國語文' }
         ],
-        4: [
+        4: [ // 星期四
             { period: 1, class: '109', subject: '國語文' },
             { period: 3, class: '117', subject: '國語文' },
             { period: 4, class: '116', subject: '國語文' },
             { period: 6, class: '109', subject: '閱讀指導' }
         ],
-        5: [
+        5: [ // 星期五
             { period: 2, class: '116', subject: '國語文' },
             { period: 5, class: '117', subject: '國語文' },
             { period: 7, class: '109', subject: '國語文' }
@@ -381,15 +390,18 @@
     let g_csvData = []; 
     let g_classRecords = {}; 
 
+    // 網頁載入完成後執行
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
     });
 
+    // 切換日期
     function changeDate(days) {
         g_currentDate.setDate(g_currentDate.getDate() + days);
         renderSchedule();
     }
 
+    // 重新整理資料
     function reloadData() {
         const btn = document.querySelector('.fab-refresh');
         btn.classList.add('spinning');
@@ -400,6 +412,7 @@
         });
     }
 
+    // 抓取 CSV 資料
     function fetchData(callback) {
         Papa.parse(csvUrl, {
             download: true,
@@ -418,6 +431,7 @@
         });
     }
 
+    // 根據日期與節次，反查課表中的課程物件
     function getCourseObjByDateAndPeriod(dateStr, period) {
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj)) return null;
@@ -429,6 +443,7 @@
         return course ? course : null;
     }
 
+    // 處理資料：找出每一堂課最新的進度紀錄
     function processData() {
         g_classRecords = {}; 
         g_csvData.forEach(row => {
@@ -447,6 +462,7 @@
         });
     }
 
+    // 檢查是否為當下正在上的課
     function checkIsCurrentPeriod(period) {
         const now = new Date();
         const isToday = g_currentDate.toDateString() === now.toDateString();
@@ -463,20 +479,19 @@
         return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
     }
 
-    // ★★★ 新增：標記進度為已更新的函式 ★★★
+    // ★★★ 按鈕點擊後執行：標記為已更新並變色 ★★★
     function markAsUpdated(uniqueId, btnElement) {
-        // 1. 儲存到 localStorage (記住這個班級在"這一天"已經更新)
+        // 1. 儲存到瀏覽器記憶體 (Local Storage)
         localStorage.setItem(uniqueId, 'true');
 
-        // 2. 改變按鈕樣式
+        // 2. 改變按鈕樣式 (變綠色)
         btnElement.classList.add('updated');
         btnElement.innerText = '✅ 已更新當天新進度';
         
-        // 3. (選擇性) 如果想要點擊後不讓它繼續跳轉，可以移除 href，
-        // 但通常保留跳轉比較好，以防老師想再修改。
-        // 若要保留跳轉，就什麼都不用做，它會開啟新分頁同時變色。
+        // 3. 連結依然有效，會在新視窗開啟表單
     }
 
+    // 渲染課表卡片
     function renderSchedule() {
         const container = document.getElementById('scheduleContainer');
         const dateDisplay = document.getElementById('currentDateDisplay');
@@ -490,7 +505,7 @@
         const y = g_currentDate.getFullYear();
         const m = String(g_currentDate.getMonth() + 1).padStart(2, '0');
         const d = String(g_currentDate.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
+        const dateStr = `${y}-${m}-${d}`; // 用於表單連結的日期格式
 
         if (!timetable[dayOfWeek]) {
             container.innerHTML = '<div class="no-class">☕ 今天沒有排定的課程。</div>';
@@ -503,13 +518,15 @@
         sortedClasses.forEach(course => {
             const uniqueKey = `${course.class}_${course.subject}`;
             const lastRecord = g_classRecords[uniqueKey];
+            
+            // 組合表單連結：自動帶入日期與節次
             const formLink = `${formBaseUrl}&${entryIds.date}=${dateStr}&${entryIds.period}=${course.period}`;
 
             const isLive = checkIsCurrentPeriod(course.period);
             const activeClass = isLive ? 'active-now' : '';
 
-            // ★★★ 產生唯一的 ID 用來檢查是否更新過 ★★★
-            // 格式：record_日期_班級_節次
+            // ★★★ 產生唯一的 ID，用來記憶這一天這節課是否已更新 ★★★
+            // ID 格式：record_日期_班級_節次
             const storageId = `record_${dateStr}_${course.class}_${course.period}`;
             const isUpdated = localStorage.getItem(storageId) === 'true';
 
@@ -523,6 +540,7 @@
                 const weekStr = days[recordDateObj.getDay()]; 
                 const shortDate = `${recordDateObj.getMonth() + 1}/${recordDateObj.getDate()}`;
 
+                // 若您的 CSV 欄位名稱不同，請修改這裡的 ['教學進度'] 等名稱
                 recordHtml = `
                     <div class="last-record">
                         <h4>📅 上次進度 (${shortDate} ${weekStr} - 第 ${lastRecord['節次']} 節)</h4>
@@ -553,10 +571,7 @@
                 `;
             }
 
-            // ★★★ 按鈕邏輯修改 ★★★
-            // 1. 如果 isUpdated 為真，加入 'updated' class
-            // 2. 文字根據狀態改變
-            // 3. 加入 onclick 事件，點擊時呼叫 markAsUpdated
+            // ★★★ 按鈕邏輯：根據 isUpdated 決定是否變綠，並綁定點擊事件 ★★★
             card.innerHTML = `
                 <div class="card-header">
                     <div class="header-left">
