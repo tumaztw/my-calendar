@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (Pro版)</title>
+    <title>張老師教學進度看板 (智慧檢查版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #d84315; --success-color: #2ecc71; --error-color: #e74c3c; }
@@ -19,9 +19,9 @@
         .card-body { padding: 15px; }
         .last-record { background-color: #fff8e1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; font-size: 0.95rem; line-height: 1.6; }
         .last-record h4 { margin: 0 0 8px 0; color: #e65100; border-bottom: 1px dashed #ffcc80; font-size: 1rem; display: flex; justify-content: space-between; }
-        .info-row { display: flex; margin-bottom: 4px; }
-        .info-label { min-width: 45px; font-weight: bold; color: #555; }
-        .info-content { flex: 1; word-break: break-all; }
+        .info-row { display: flex; margin-bottom: 4px; align-items: flex-start; }
+        .info-label { min-width: 45px; font-weight: bold; color: #555; white-space: nowrap; }
+        .info-content { flex: 1; word-break: break-word; white-space: pre-wrap; }
         .check-panel { background-color: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb; margin-bottom: 10px; transition: background-color 0.3s; }
         .check-panel.all-clear { background-color: #e8f5e9; border-color: #a5d6a7; }
         .panel-title { font-weight: bold; margin-bottom: 8px; color: #1565c0; display: block; }
@@ -56,9 +56,7 @@
 
 <script>
     // ★ 核心設定區 ★
-    // 您的 CSV 連結
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSlivRAYD4jjOxvWWQ71eRKXfXG1pBr8oqr1k2d4h_Gq8Bt6evj_x-XQzlTV_DzhK9k8W1XEbqA2ljD/pub?output=csv'; 
-    // 您的表單連結
     const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfgyKNluqNR1uo1kM89Jh4wp6yHs9Quisz_9OprFS9AcialXQ/viewform?usp=pp_url';
     
     // 欄位 ID 對照表
@@ -73,7 +71,6 @@
         missing: 'entry.551581621'
     };
 
-    // 課表設定 (Key: 0=週日, 1=週一... 依此類推)
     const timetable = {
         1: [{p:1, c:'109'}, {p:2, c:'117'}, {p:4, c:'116'}],
         2: [{p:2, c:'116'}, {p:3, c:'109'}, {p:5, c:'117'}, {p:7, c:'116', s:'閱讀'}],
@@ -169,19 +166,31 @@
                 return rClass === c.c && r['日期'] <= dateStr; 
             }).sort((a,b) => b['日期'].localeCompare(a['日期']) || b['節次'] - a['節次']);
             
-            const lastRow = history[0];
+            const displayRow = history[0]; // 黃色區塊：永遠顯示最新一筆（可能是今天剛填的）
+
+            // ★ 核心修改：決定「檢查按鈕」要抓哪一天的作業 ★
+            let checkRow = displayRow;
+            let checkTitle = "上次作業";
+
+            // 如果最新這筆紀錄是「今天」，代表我剛上完課填完表
+            // 那麼下方的檢查按鈕，應該要顯示「上一堂課 (index 1)」的作業，因為那才是今天要收的
+            if (displayRow && displayRow['日期'] === dateStr && history.length > 1) {
+                checkRow = history[1]; // 改抓上一筆
+                checkTitle = `上次作業 (${checkRow['日期'].slice(5)})`;
+            }
 
             let hwItems = [];
-            if(lastRow) {
-                // ★ 修改處：只抓取「作業內容」來產生按鈕，不抓取測驗 ★
-                if(lastRow['作業內容']) hwItems.push(...lastRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
+            if(checkRow) {
+                // 只抓取「作業內容」來產生按鈕
+                if(checkRow['作業內容']) hwItems.push(...checkRow['作業內容'].split(/[、\n,，]/).map(s=>s.trim()));
             }
             hwItems = [...new Set(hwItems)].filter(s => s && s !== '無');
 
             const card = document.createElement('div');
             card.className = 'class-card';
             
-            let initialMissing = lastRow ? parseNums(lastRow['缺交座號']) : [];
+            // 缺交紅燈：預設載入 checkRow (上一筆) 的缺交紀錄，這樣才對應得到上面的按鈕
+            let initialMissing = checkRow ? parseNums(checkRow['缺交座號']) : [];
             if(!g_selectedMissing[id]) g_selectedMissing[id] = new Set(initialMissing);
 
             card.innerHTML = `
@@ -191,17 +200,17 @@
                 </div>
                 <div class="card-body">
                     <div class="last-record">
-                        <h4>📅 上次紀錄 (${lastRow ? lastRow['日期'].slice(5) : '無'}) 
-                            <span style="font-size:0.8em; color:#888;">${lastRow ? (lastRow['節次']+'節') : ''}</span>
+                        <h4>📅 上次紀錄 (${displayRow ? displayRow['日期'].slice(5) : '無'}) 
+                            <span style="font-size:0.8em; color:#888;">${displayRow ? (displayRow['節次']+'節') : ''}</span>
                         </h4>
-                        <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${lastRow ? (lastRow['教學進度'] || '無') : '無'}</span></div>
-                        <div class="info-row" style="color:#d84315;"><span class="info-label">作業：</span><span class="info-content">${lastRow ? (lastRow['作業內容'] || '無') : '無'}</span></div>
-                        <div class="info-row" style="color:#2e7d32;"><span class="info-label">測驗：</span><span class="info-content">${lastRow ? (lastRow['平時測驗'] || '無') : '無'}</span></div>
-                        <div class="info-row"><span class="info-label">缺交：</span><span class="info-content">${lastRow ? (lastRow['缺交座號'] || '無') : '無'}</span></div>
+                        <div class="info-row"><span class="info-label">進度：</span><span class="info-content">${displayRow ? (displayRow['教學進度'] || '無') : '無'}</span></div>
+                        <div class="info-row" style="color:#d84315;"><span class="info-label">作業：</span><span class="info-content">${displayRow ? (displayRow['作業內容'] || '無') : '無'}</span></div>
+                        <div class="info-row" style="color:#2e7d32;"><span class="info-label">測驗：</span><span class="info-content">${displayRow ? (displayRow['平時測驗'] || '無') : '無'}</span></div>
+                        <div class="info-row"><span class="info-label">缺交：</span><span class="info-content">${displayRow ? (displayRow['缺交座號'] || '無') : '無'}</span></div>
                     </div>
                     
                     <div class="check-panel" id="panel-${id}">
-                        <span class="panel-title">🔍 檢查項目 / 缺交登記</span>
+                        <span class="panel-title">🔍 檢查項目：${hwItems.length > 0 ? checkTitle : '無待檢查作業'}</span>
                         
                         <div class="hw-chips" id="chips-${id}">
                             ${hwItems.map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
