@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>張老師教學進度看板 (精準節次版)</title>
+    <title>張老師教學進度看板 (修正隱藏版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --primary-color: #4a6fa5; --bg-color: #f4f7f6; --card-bg: #ffffff; --accent-color: #ff9800; --success-color: #2ecc71; --error-color: #e74c3c; --dark-text: #2c3e50; }
@@ -71,7 +71,7 @@
 
         .hw-input-hidden { display: none; }
         
-        /* 座號區 - 預設隱藏 */
+        /* 座號區 - CSS 預設隱藏 (為了保險，HTML 中也會加 inline style) */
         .number-grid { 
             display: none; 
             grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); 
@@ -79,6 +79,8 @@
             padding-top: 15px; border-top: 1px dashed #cbd5e1;
             animation: slideDown 0.3s ease-out;
         }
+        
+        /* 顯示時的樣式 */
         .number-grid.show { display: grid; }
 
         @keyframes slideDown {
@@ -252,7 +254,10 @@
         });
 
         const grid = document.querySelector(`#panel-${id} .number-grid`);
-        if(grid) grid.classList.add('show');
+        if(grid) {
+            grid.style.display = 'grid'; // ★ 點擊後，強制顯示
+            grid.classList.add('show');
+        }
 
         if (g_itemMissingMap[id] && g_itemMissingMap[id][rawName]) {
              g_selectedMissing[id] = new Set(g_itemMissingMap[id][rawName].nums);
@@ -278,27 +283,16 @@
             const id = `${dateStr}-${c.p}`; 
             const isActive = checkActive(c.p); 
 
-            // ★★★ 關鍵修改：過濾歷史紀錄邏輯 ★★★
-            // 排除「同一天但不同節次」的資料，避免第7節讀到第2節的資料
+            // ★ 修正邏輯：過濾掉「今天但不同節次」的資料，避免第7節抓到第2節
             const history = g_rawRecords.filter(r => {
                 const rClass = getClassByDateAndPeriod(r['日期'], r['節次']);
-                
-                // 1. 班級必須相同
                 if (rClass !== c.c) return false;
-                
-                // 2. 如果是「今天」的紀錄，必須「節次」也相同才算數
                 if (r['日期'] === dateStr && parseInt(r['節次']) !== c.p) return false;
-
                 return r['日期'] <= dateStr; 
             }).sort((a,b) => b['日期'].localeCompare(a['日期']) || b['節次'] - a['節次']);
             
-            // 嘗試抓取最新一筆 (經過上方過濾，如果是今天第7節，不會抓到今天第2節)
-            // 如果今天第7節沒資料，它會自動抓到昨天(或上次)的資料
             const displayRow = history[0]; 
 
-            // 如果 displayRow 存在，但日期不是今天，代表是「上次紀錄」
-            // 這樣綠色框框的標題就會正確顯示「上次紀錄」，而不是誤判為「今日進度」
-            
             let classOutstanding = {}; 
             [...history].reverse().forEach(r => {
                 const item = r['檢查項目'];
@@ -311,7 +305,7 @@
 
             let allButtons = [];
 
-            // 1. 歷史欠債 (Outstanding)
+            // 1. 歷史欠債
             Object.keys(classOutstanding).forEach(item => {
                 const data = classOutstanding[item];
                 if (data.nums.length > 0) {
@@ -324,7 +318,6 @@
             // 2. 今日/上次指派
             let rawHwList = [];
             let targetRowDate = "";
-            // 如果有找到紀錄 (displayRow)，就顯示它的作業按鈕
             if (displayRow) {
                 if(displayRow['作業內容']) {
                     rawHwList.push(...displayRow['作業內容'].split(/[、\n,，]/));
@@ -360,6 +353,7 @@
             const card = document.createElement('div');
             card.className = `class-card ${isActive ? 'active-now' : ''}`;
             
+            // ★ 修改：在 number-grid 加上 style="display:none" 絕對隱藏
             card.innerHTML = `
                 <div class="status-badge">🔴 上課中</div>
                 <div class="card-header">
@@ -392,7 +386,7 @@
                         
                         <input type="hidden" id="in-${id}" value="">
                         
-                        <div class="number-grid">
+                        <div class="number-grid" style="display:none;">
                             ${Array.from({length: studentCount}, (_,i)=>i+1).map(n => `
                                 <div class="num-btn" onclick="toggleStudent('${id}',${n},this)">${n}</div>
                             `).join('')}
