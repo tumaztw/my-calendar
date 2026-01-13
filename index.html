@@ -16,37 +16,33 @@
         
         .container { max-width: 800px; margin: 0 auto; }
         
-        /* ★ 卡片設計優化 ★ */
+        /* 卡片設計 */
         .class-card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; position: relative; transition: transform 0.2s; border: 1px solid #eee; }
         
-        /* 上課中的特效 */
+        /* 上課中特效 */
         .class-card.active-now { border: 2px solid var(--accent-color); transform: scale(1.01); box-shadow: 0 8px 25px rgba(255, 152, 0, 0.2); }
         .status-badge { position: absolute; top: 15px; right: 15px; background: var(--error-color); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; display: none; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4); animation: pulse 2s infinite; }
         .class-card.active-now .status-badge { display: block; }
 
-        /* 標頭區塊：大圖示設計 */
+        /* 標頭區塊 */
         .card-header { display: flex; align-items: center; padding: 0; background: white; border-bottom: 1px solid #f0f0f0; }
-        
-        /* 左側大數字區塊 */
         .period-box { background: var(--primary-color); color: white; width: 70px; height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-right: 20px; }
         .p-num { font-size: 2.2rem; font-weight: 900; line-height: 1; }
         .p-label { font-size: 0.8rem; opacity: 0.9; }
-        
-        /* 中間班級資訊 */
         .class-info { flex: 1; padding: 15px 0; }
         .class-title { font-size: 1.5rem; font-weight: bold; color: var(--dark-text); margin-bottom: 4px; }
         .class-subject { color: #7f8c8d; font-size: 0.95rem; font-weight: 500; }
 
         .card-body { padding: 20px; }
         
-        /* 黃色紀錄區 */
+        /* 紀錄區 */
         .last-record { background-color: #fffbf2; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffe0b2; font-size: 0.95rem; line-height: 1.7; }
         .last-record h4 { margin: 0 0 10px 0; color: #f57c00; font-size: 1rem; border-bottom: 2px solid #ffe0b2; padding-bottom: 5px; display: block; }
         .info-row { display: flex; margin-bottom: 6px; align-items: flex-start; }
         .info-label { min-width: 50px; font-weight: bold; color: #666; }
         .info-content { flex: 1; color: #333; word-break: break-all; }
 
-        /* 藍色操作區 */
+        /* 操作區 */
         .check-panel { background-color: #f0f7ff; padding: 18px; border-radius: 12px; border: 1px solid #dbeafe; }
         .check-panel.all-clear { background-color: #f0fdf4; border-color: #bbf7d0; }
         .panel-title { font-weight: bold; margin-bottom: 12px; color: #1e40af; display: block; font-size: 1rem; }
@@ -92,7 +88,10 @@
 </div>
 
 <div class="container" id="mainContainer">
-    <div style="text-align:center; padding:40px; color:#999;">正在連線至資料庫...</div>
+    <div style="text-align:center; padding:60px; color:#666;">
+        <div>⏳ 正在連線至資料庫...</div>
+        <div style="font-size:0.9rem; margin-top:10px; color:#999;">如果停留太久，請檢查網路或按下右下角重新整理</div>
+    </div>
 </div>
 <button class="fab-refresh" onclick="location.reload()">↻</button>
 
@@ -137,7 +136,18 @@
     function fetchData() {
         Papa.parse(csvUrl, {
             download: true, header: true, skipEmptyLines: true,
-            complete: (results) => { g_rawRecords = results.data; render(); }
+            complete: (results) => { 
+                if (results.data && results.data.length > 0) {
+                    g_rawRecords = results.data; 
+                    render(); 
+                } else {
+                    document.getElementById('mainContainer').innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">⚠️ 讀取到的資料為空，請檢查 CSV 連結是否正確。</div>';
+                }
+            },
+            error: (err) => {
+                document.getElementById('mainContainer').innerHTML = '<div style="text-align:center; padding:40px; color:#d32f2f;">⚠️ 無法連線至資料庫。<br>請檢查網路連線，或確認試算表是否已發佈為 CSV。</div>';
+                console.error(err);
+            }
         });
     }
 
@@ -285,7 +295,6 @@
                 }
             });
 
-            // 預設載入邏輯
             let initialLoadItem = '';
             let initialMissing = [];
             if (redButtons.length > 0) {
@@ -335,4 +344,22 @@
                             ${redButtons.map(btn => `<div class="hw-chip remedy-chip" onclick="setItem('${id}','${btn.label}')">${btn.label}</div>`).join('')}
                             ${[...blueButtons].map(h => `<div class="hw-chip" onclick="setItem('${id}','${h}')">${h}</div>`).join('')}
                         </div>
-                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊
+                        <input type="text" class="hw-input" id="in-${id}" placeholder="點擊按鈕或輸入項目..." oninput="updateLink('${id}')" value="${initialLoadItem}">
+                        <div class="all-clear-msg" id="msg-${id}">🎉 本項全數繳清！</div>
+                        <div class="number-grid">
+                            ${Array.from({length:40}, (_,i)=>i+1).map(n => `
+                                <div class="num-btn ${g_selectedMissing[id].has(n)?'missing':''}" onclick="toggleStudent('${id}',${n},this)">${n}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <a href="#" target="_blank" class="btn-submit" id="btn-${id}">🚀 填寫進度</a>
+                </div>
+            `;
+            container.appendChild(card);
+            updateLink(id);
+        });
+    }
+    fetchData();
+</script>
+</body>
+</html>
